@@ -26,7 +26,7 @@
 #include "calibration.h"
 
 // Wersja oprogramowania
-const char* SOFTWARE_VERSION = "1.3.0";
+const char* SOFTWARE_VERSION = "1.1.0";
 const char* BUILD_DATE = __DATE__;
 const char* BUILD_TIME = __TIME__;
 
@@ -123,91 +123,76 @@ void checkPatternButtons() {
     if (digitalRead(BTN_P1A_PIN) == LOW && systemState.currentPattern != PATTERN_P1A) {
         systemState.currentPattern = PATTERN_P1A;
         systemState.patternChanged = true;
-        handlePatternChange(PATTERN_P1A);
         delay(DEBOUNCE_DELAY);
     }
     if (digitalRead(BTN_P1B_PIN) == LOW && systemState.currentPattern != PATTERN_P1B) {
         systemState.currentPattern = PATTERN_P1B;
         systemState.patternChanged = true;
-        handlePatternChange(PATTERN_P1B);
         delay(DEBOUNCE_DELAY);
     }
     if (digitalRead(BTN_P1C_PIN) == LOW && systemState.currentPattern != PATTERN_P1C) {
         systemState.currentPattern = PATTERN_P1C;
         systemState.patternChanged = true;
-        handlePatternChange(PATTERN_P1C);
         delay(DEBOUNCE_DELAY);
     }
     if (digitalRead(BTN_P1D_PIN) == LOW && systemState.currentPattern != PATTERN_P1D) {
         systemState.currentPattern = PATTERN_P1D;
         systemState.patternChanged = true;
-        handlePatternChange(PATTERN_P1D);
         delay(DEBOUNCE_DELAY);
     }
     if (digitalRead(BTN_P1E_PIN) == LOW && systemState.currentPattern != PATTERN_P1E) {
         systemState.currentPattern = PATTERN_P1E;
         systemState.patternChanged = true;
-        handlePatternChange(PATTERN_P1E);
         delay(DEBOUNCE_DELAY);
     }
     if (digitalRead(BTN_P2A_PIN) == LOW && systemState.currentPattern != PATTERN_P2A) {
         systemState.currentPattern = PATTERN_P2A;
         systemState.patternChanged = true;
-        handlePatternChange(PATTERN_P2A);
         delay(DEBOUNCE_DELAY);
     }
     if (digitalRead(BTN_P2B_PIN) == LOW && systemState.currentPattern != PATTERN_P2B) {
         systemState.currentPattern = PATTERN_P2B;
         systemState.patternChanged = true;
-        handlePatternChange(PATTERN_P2B);
         delay(DEBOUNCE_DELAY);
     }
     if (digitalRead(BTN_P3A_PIN) == LOW && systemState.currentPattern != PATTERN_P3A) {
         systemState.currentPattern = PATTERN_P3A;
         systemState.patternChanged = true;
-        handlePatternChange(PATTERN_P3A);
         delay(DEBOUNCE_DELAY);
     }
     if (digitalRead(BTN_P3B_PIN) == LOW && systemState.currentPattern != PATTERN_P3B) {
         systemState.currentPattern = PATTERN_P3B;
         systemState.patternChanged = true;
-        handlePatternChange(PATTERN_P3B);
         delay(DEBOUNCE_DELAY);
     }
     if (digitalRead(BTN_P4_PIN) == LOW && systemState.currentPattern != PATTERN_P4) {
         systemState.currentPattern = PATTERN_P4;
         systemState.patternChanged = true;
-        handlePatternChange(PATTERN_P4);
         delay(DEBOUNCE_DELAY);
     }
     if (digitalRead(BTN_P6_PIN) == LOW && systemState.currentPattern != PATTERN_P6) {
         systemState.currentPattern = PATTERN_P6;
         systemState.patternChanged = true;
-        handlePatternChange(PATTERN_P6);
         delay(DEBOUNCE_DELAY);
     }
     if (digitalRead(BTN_P7A_PIN) == LOW && systemState.currentPattern != PATTERN_P7A) {
         systemState.currentPattern = PATTERN_P7A;
         systemState.patternChanged = true;
-        handlePatternChange(PATTERN_P7A);
         delay(DEBOUNCE_DELAY);
     }
     if (digitalRead(BTN_P7B_PIN) == LOW && systemState.currentPattern != PATTERN_P7B) {
         systemState.currentPattern = PATTERN_P7B;
         systemState.patternChanged = true;
-        handlePatternChange(PATTERN_P7B);
         delay(DEBOUNCE_DELAY);
     }
     if (digitalRead(BTN_P7C_PIN) == LOW && systemState.currentPattern != PATTERN_P7C) {
         systemState.currentPattern = PATTERN_P7C;
         systemState.patternChanged = true;
-        handlePatternChange(PATTERN_P7C);
         delay(DEBOUNCE_DELAY);
     }
     if (digitalRead(BTN_P7D_PIN) == LOW && systemState.currentPattern != PATTERN_P7D) {
         systemState.currentPattern = PATTERN_P7D;
         systemState.patternChanged = true;
-        handlePatternChange(PATTERN_P7D);
         delay(DEBOUNCE_DELAY);
     }
 }
@@ -413,18 +398,8 @@ void processPainting() {
     }
 
     // Dla wzorców przerwanych - oblicz czy jesteśmy w linii czy przerwie
-    // NOWE v1.3.0: Uwzględnij offset z Start Gap
-    float distanceFromPatternStart = (systemState.distance - systemState.patternStartDistance) / 100.0; // cm → m
-    float effectiveDistance = distanceFromPatternStart - systemState.offsetDistance;
-
-    // Jeśli wciąż w fazie offsetu (przerwy), nie maluj
-    if (effectiveDistance < 0) {
-        relays.stopAll();
-        return;
-    }
-
     float cycleLength = pattern->lineLength + pattern->gapLength;
-    float positionInCycle = fmod(effectiveDistance, cycleLength);
+    float positionInCycle = fmod(distanceMeters, cycleLength);
 
     bool shouldPaint = (positionInCycle < pattern->lineLength);
 
@@ -535,11 +510,6 @@ void setup() {
     systemState.lastMovementTime = millis();
     systemState.safetyLocked = false;
 
-    // NOWE v1.3.0: Start Gap
-    systemState.startFromGap = false;
-    systemState.offsetDistance = 0.0;
-    systemState.patternStartDistance = 0;
-
     Serial.println("System gotowy do pracy!\n");
     Serial.printf("Min. predkosc: %.1f km/h\n", MIN_SPEED_KMH);
     Serial.printf("Min. ruch: %d cm\n", MIN_MOVEMENT_CM);
@@ -592,7 +562,6 @@ void loop() {
     // Sprawdzanie przycisków
     checkPatternButtons();
     checkReverseButton();
-    checkStartGapButton();  // NOWE v1.3.0
     checkControlButtons();
 
     // Obsługa menu

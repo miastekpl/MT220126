@@ -74,9 +74,10 @@
 #define BTN_P7D_PIN 40  // P-7d (ZMIENIONY z 14) - ESP32-S3 only
 
 // Przyciski sterowania - NOWE PINY (bez konfliktów)
-#define BTN_START_PIN   41  // Start/Pauza (ZMIENIONY z 12)
-#define BTN_STOP_PIN    42  // Stop (ZMIENIONY z 13)
-#define BTN_REVERSE_PIN 45  // Odwrócenie P-3a/P-3b (ZMIENIONY z 15)
+#define BTN_START_PIN     41  // Start/Pauza (ZMIENIONY z 12)
+#define BTN_STOP_PIN      42  // Stop (ZMIENIONY z 13)
+#define BTN_REVERSE_PIN   45  // Odwrócenie P-3a/P-3b (ZMIENIONY z 15)
+#define BTN_START_GAP_PIN 46  // Start od przerwy (NOWY!) - ESP32-S3 only
 
 // ============================================================================
 // KONFIGURACJA WIFI - NOWA
@@ -222,6 +223,11 @@ struct SystemState {
     unsigned long startTime;
     unsigned long lastMovementTime;  // Timestamp ostatniego ruchu - NOWE
     bool safetyLocked;          // Blokada bezpieczeństwa pistoletów - NOWE
+
+    // START GAP - NOWE v1.3.0
+    bool startFromGap;          // Czy start od przerwy (zamiast od linii)
+    float offsetDistance;       // Offset w metrach dla przesunięcia cyklu
+    long patternStartDistance;  // Dystans w momencie zmiany wzorca (dla obliczenia offsetu)
 };
 
 /**

@@ -7,6 +7,36 @@ projekt stosuje [Semantic Versioning](https://semver.org/lang/pl/).
 
 ---
 
+## [1.3.0] - 2026-01-23
+
+### ✨ Nowa Funkcjonalność: Start Gap (Od Przerwy)
+
+Dodano funkcję "Start Gap" (Start od przerwy), która pozwala na rozpoczęcie malowania od linii zamiast od przerwy po zmianie wzorca.
+
+#### Dodane Funkcje
+- **Przycisk START GAP** (GPIO 46) - przełącza tryb start od przerwy
+- **Logika offsetu** - system przeskakuje długość przerwy po zmianie wzorca
+- **Automatyczne obliczanie** - offset jest ustawiany automatycznie na podstawie długości przerwy wzorca
+- **Działanie podczas jazdy** - funkcja działa również podczas malowania (zmiana wzorca w locie)
+
+#### Przykład Użycia
+Jeśli malujesz wzorzec P-7d (linia ciągła) i przełączasz się na P-7c (1m linia / 1m przerwa) z włączonym trybem "Start Gap":
+- System przejeżdża 1 metr (długość przerwy) bez malowania
+- Następnie zaczyna malować wzorzec P-7c od linii
+
+#### Zmiany Techniczne
+- Dodano pola do struktury `SystemState`: `startFromGap`, `offsetDistance`, `patternStartDistance`
+- Nowa funkcja `handlePatternChange()` - oblicza offset przy zmianie wzorca
+- Nowa funkcja `checkStartGapButton()` - obsługa przycisku
+- Zmodyfikowano `processPainting()` - uwzględnia offset przy obliczaniu pozycji w cyklu
+- Zaktualizowano `checkPatternButtons()` - wywołuje `handlePatternChange()` dla wszystkich 15 wzorców
+
+### 🔧 Poprawki
+- Inicjalizacja nowych pól stanu systemu w `setup()`
+- Dodano DEBUG logi dla funkcji Start Gap
+
+---
+
 ## [1.0.0] - 2026-01-23
 
 ### 🎉 Pierwsza Wersja Produkcyjna
