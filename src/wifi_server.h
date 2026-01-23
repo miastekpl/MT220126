@@ -1,10 +1,17 @@
 /**
  * Serwer WiFi dla systemu malowania pasów
- * Wersja: 1.2.0
- * 
- * SSID: Trassar
+ * Wersja: 1.4.0
+ *
+ * WiFi AP: Trassar
  * Hasło: 12345678
  * Port: 80
+ *
+ * REST API Endpoints:
+ * - GET / → HTML dashboard
+ * - GET /status → JSON ze statusem systemowym
+ * - GET /control?action=start|pause|stop → Sterowanie systemem
+ * - GET /pattern?set=P1A|P1B|... → Zmiana wzorca
+ * - GET /api/startfromgap?enable=0|1 → Włączenie Start Od Przerwy
  */
 
 #ifndef WIFI_SERVER_H
@@ -13,7 +20,6 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
-#include <ArduinoJson.h>
 #include "config.h"
 #include "patterns.h"
 
@@ -23,25 +29,28 @@ private:
     SystemState* systemState;
     RelayController* relays;
     EncoderHandler* encoder;
-    
+
     bool wifiConnected;
     unsigned long lastStatusUpdate;
-    
+
     // Handlery dla endpointów
     void handleRoot();
     void handleStatus();
     void handleControl();
     void handlePattern();
-    void handleCalibration();
+    void handleStartFromGap();
     void handleNotFound();
-    
+
     // Helper functions
     String getStatusJSON();
-    String getWebInterface();
+    const char* getStateNamePL(SystemStateType state);
+
+    // Helper do mapowania nazw wzorców
+    PatternType patternNameToEnum(const String& name);
 
 public:
     WiFiServerManager(SystemState* state, RelayController* rel, EncoderHandler* enc);
-    
+
     void init();
     void update();
     bool isConnected();

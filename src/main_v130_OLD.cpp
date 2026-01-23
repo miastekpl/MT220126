@@ -1,18 +1,8 @@
 /**
  * System Sterowania Malowaniem Pasów Drogowych
- * Wersja: 1.4.0 - OPTYMALIZACJE I POPRAWKI KRYTYCZNE
+ * Wersja: 1.1.0 - KRYTYCZNE POPRAWKI
  *
- * GŁÓWNE ZMIANY v1.4.0:
- * - Dodano thread-safety (FreeRTOS mutex)
- * - Optymalizacja processPainting() (integer math zamiast float fmod)
- * - Naprawiono REVERSE - faktyczna zamiana pistoletów P1↔P4, P2↔P5, P3↔P6
- * - Naprawiono START GAP BUG (nie resetuje distance gdy Start Gap aktywny)
- * - Refaktoryzacja checkPatternButtons() (pętla zamiast 76 linii kodu)
- * - Non-blocking debounce (usunięto wszystkie delay() z obsługi przycisków)
- * - Nowy config_v140_NEW.h z poprawionymi pinami GPIO
- *
- * POPRZEDNIE ZMIANY (v1.3.0):
- * - Dodano funkcję Start Gap (Od Przerwy)
+ * GŁÓWNE ZMIANY:
  * - Dodano zabezpieczenie pistoletów (min 2km/h + wykrywanie ruchu)
  * - Poprawiono mapowanie pistoletów do wzorców (zgodnie ze specyfikacją)
  * - Poprawiono obliczanie powierzchni (rzeczywiste pistolety)
@@ -27,7 +17,7 @@
 #include <TFT_eSPI.h>
 #include <SPI.h>
 #include <esp_task_wdt.h>
-#include "config_v140_NEW.h"  // ZMIANA v1.4.0: Nowy header z poprawionymi pinami GPIO
+#include "config.h"
 #include "patterns.h"
 #include "display_manager.h"
 #include "encoder_handler.h"
@@ -36,14 +26,9 @@
 #include "calibration.h"
 
 // Wersja oprogramowania
-const char* SOFTWARE_VERSION = "1.4.0";  // ZMIANA v1.4.0: Nowa wersja
+const char* SOFTWARE_VERSION = "1.3.0";
 const char* BUILD_DATE = __DATE__;
 const char* BUILD_TIME = __TIME__;
-
-// NOWE v1.4.0: FreeRTOS mutex dla thread-safety
-// Chroni dostęp do współdzielonych zmiennych między ISR a main loop
-SemaphoreHandle_t stateMutex = NULL;
-SemaphoreHandle_t encoderMutex = NULL;
 
 // Obiekty globalne
 TFT_eSPI tft = TFT_eSPI();
@@ -56,22 +41,6 @@ CalibrationManager calibration(&encoder);
 // Zmienne stanu systemu
 SystemState systemState;
 volatile bool interruptFlag = false;
-
-// NOWE v1.4.0: Struktura dla przycisków wzorców (refaktoryzacja)
-struct PatternButton {
-    uint8_t pin;
-    PatternType pattern;
-};
-
-// NOWE v1.4.0: Tablica mapowania przycisków na wzorce (zamiast 76 linii if-ów)
-const PatternButton PATTERN_BUTTONS[] PROGMEM = {
-    {BTN_P1A_PIN, PATTERN_P1A}, {BTN_P1B_PIN, PATTERN_P1B}, {BTN_P1C_PIN, PATTERN_P1C},
-    {BTN_P1D_PIN, PATTERN_P1D}, {BTN_P1E_PIN, PATTERN_P1E}, {BTN_P2A_PIN, PATTERN_P2A},
-    {BTN_P2B_PIN, PATTERN_P2B}, {BTN_P3A_PIN, PATTERN_P3A}, {BTN_P3B_PIN, PATTERN_P3B},
-    {BTN_P4_PIN, PATTERN_P4},   {BTN_P6_PIN, PATTERN_P6},   {BTN_P7A_PIN, PATTERN_P7A},
-    {BTN_P7B_PIN, PATTERN_P7B}, {BTN_P7C_PIN, PATTERN_P7C}, {BTN_P7D_PIN, PATTERN_P7D}
-};
-const uint8_t NUM_PATTERN_BUTTONS = sizeof(PATTERN_BUTTONS) / sizeof(PatternButton);
 
 // Przerwanie od enkodera (TYLKO DO POMIARÓW!)
 void IRAM_ATTR encoderISR() {
@@ -95,7 +64,7 @@ bool isSafeToActivateGuns() {
     // Sprawdzenie ruchu
     long currentDistance = systemState.distance;
     long lastDist = systemState.lastDistance;
-
+    
     if (abs(currentDistance - lastDist) < MIN_MOVEMENT_CM) {
         unsigned long timeSinceMovement = millis() - systemState.lastMovementTime;
         if (timeSinceMovement > MOVEMENT_TIMEOUT_MS) {
@@ -113,7 +82,7 @@ bool isSafeToActivateGuns() {
 
 /**
  * Inicjalizacja wszystkich przycisków wzorców
- * ZMIENIONE PINY - zgodnie z config_v140_NEW.h
+ * ZMIENIONE PINY - zgodnie z nowym config.h
  */
 void initPatternButtons() {
     pinMode(BTN_P1A_PIN, INPUT_PULLUP);
@@ -134,7 +103,7 @@ void initPatternButtons() {
     pinMode(BTN_START_PIN, INPUT_PULLUP);
     pinMode(BTN_STOP_PIN, INPUT_PULLUP);
     pinMode(BTN_REVERSE_PIN, INPUT_PULLUP);
-    pinMode(BTN_START_GAP_PIN, INPUT_PULLUP);  // NOWY v1.3.0: Start od przerwy
+    pinMode(BTN_START_GAP_PIN, INPUT_PULLUP);  // NOWY: Start od przerwy
 }
 
 /**
@@ -148,28 +117,98 @@ void initJoystick() {
 }
 
 /**
- * PRZEPISANA FUNKCJA v1.4.0: Sprawdzanie wciśniętych przycisków wzorców
- * Zamiast 76 linii powtarzalnego kodu używamy pętli po tablicy PATTERN_BUTTONS
- * ZMIANA: Non-blocking debounce (bez delay)
+ * Sprawdzanie wciśniętych przycisków wzorców
  */
 void checkPatternButtons() {
-    static unsigned long lastPressTime = 0;
-    unsigned long now = millis();
-
-    // Debounce globalny - zapobiega wielokrotnym naciśnięciom
-    if (now - lastPressTime < DEBOUNCE_DELAY) return;
-
-    // Iteracja po wszystkich przyciskach wzorców
-    for (uint8_t i = 0; i < NUM_PATTERN_BUTTONS; i++) {
-        if (digitalRead(PATTERN_BUTTONS[i].pin) == LOW &&
-            systemState.currentPattern != PATTERN_BUTTONS[i].pattern) {
-            systemState.currentPattern = PATTERN_BUTTONS[i].pattern;
-            systemState.patternChanged = true;
-            handlePatternChange(PATTERN_BUTTONS[i].pattern);
-            lastPressTime = now;
-            DEBUG_PRINTF("Zmiana wzorca: %s\n", getPatternName(PATTERN_BUTTONS[i].pattern));
-            break;  // Tylko jeden wzorzec na raz
-        }
+    if (digitalRead(BTN_P1A_PIN) == LOW && systemState.currentPattern != PATTERN_P1A) {
+        systemState.currentPattern = PATTERN_P1A;
+        systemState.patternChanged = true;
+        handlePatternChange(PATTERN_P1A);
+        delay(DEBOUNCE_DELAY);
+    }
+    if (digitalRead(BTN_P1B_PIN) == LOW && systemState.currentPattern != PATTERN_P1B) {
+        systemState.currentPattern = PATTERN_P1B;
+        systemState.patternChanged = true;
+        handlePatternChange(PATTERN_P1B);
+        delay(DEBOUNCE_DELAY);
+    }
+    if (digitalRead(BTN_P1C_PIN) == LOW && systemState.currentPattern != PATTERN_P1C) {
+        systemState.currentPattern = PATTERN_P1C;
+        systemState.patternChanged = true;
+        handlePatternChange(PATTERN_P1C);
+        delay(DEBOUNCE_DELAY);
+    }
+    if (digitalRead(BTN_P1D_PIN) == LOW && systemState.currentPattern != PATTERN_P1D) {
+        systemState.currentPattern = PATTERN_P1D;
+        systemState.patternChanged = true;
+        handlePatternChange(PATTERN_P1D);
+        delay(DEBOUNCE_DELAY);
+    }
+    if (digitalRead(BTN_P1E_PIN) == LOW && systemState.currentPattern != PATTERN_P1E) {
+        systemState.currentPattern = PATTERN_P1E;
+        systemState.patternChanged = true;
+        handlePatternChange(PATTERN_P1E);
+        delay(DEBOUNCE_DELAY);
+    }
+    if (digitalRead(BTN_P2A_PIN) == LOW && systemState.currentPattern != PATTERN_P2A) {
+        systemState.currentPattern = PATTERN_P2A;
+        systemState.patternChanged = true;
+        handlePatternChange(PATTERN_P2A);
+        delay(DEBOUNCE_DELAY);
+    }
+    if (digitalRead(BTN_P2B_PIN) == LOW && systemState.currentPattern != PATTERN_P2B) {
+        systemState.currentPattern = PATTERN_P2B;
+        systemState.patternChanged = true;
+        handlePatternChange(PATTERN_P2B);
+        delay(DEBOUNCE_DELAY);
+    }
+    if (digitalRead(BTN_P3A_PIN) == LOW && systemState.currentPattern != PATTERN_P3A) {
+        systemState.currentPattern = PATTERN_P3A;
+        systemState.patternChanged = true;
+        handlePatternChange(PATTERN_P3A);
+        delay(DEBOUNCE_DELAY);
+    }
+    if (digitalRead(BTN_P3B_PIN) == LOW && systemState.currentPattern != PATTERN_P3B) {
+        systemState.currentPattern = PATTERN_P3B;
+        systemState.patternChanged = true;
+        handlePatternChange(PATTERN_P3B);
+        delay(DEBOUNCE_DELAY);
+    }
+    if (digitalRead(BTN_P4_PIN) == LOW && systemState.currentPattern != PATTERN_P4) {
+        systemState.currentPattern = PATTERN_P4;
+        systemState.patternChanged = true;
+        handlePatternChange(PATTERN_P4);
+        delay(DEBOUNCE_DELAY);
+    }
+    if (digitalRead(BTN_P6_PIN) == LOW && systemState.currentPattern != PATTERN_P6) {
+        systemState.currentPattern = PATTERN_P6;
+        systemState.patternChanged = true;
+        handlePatternChange(PATTERN_P6);
+        delay(DEBOUNCE_DELAY);
+    }
+    if (digitalRead(BTN_P7A_PIN) == LOW && systemState.currentPattern != PATTERN_P7A) {
+        systemState.currentPattern = PATTERN_P7A;
+        systemState.patternChanged = true;
+        handlePatternChange(PATTERN_P7A);
+        delay(DEBOUNCE_DELAY);
+    }
+    if (digitalRead(BTN_P7B_PIN) == LOW && systemState.currentPattern != PATTERN_P7B) {
+        systemState.currentPattern = PATTERN_P7B;
+        systemState.patternChanged = true;
+        handlePatternChange(PATTERN_P7B);
+        delay(DEBOUNCE_DELAY);
+    }
+    if (digitalRead(BTN_P7C_PIN) == LOW && systemState.currentPattern != PATTERN_P7C) {
+        systemState.currentPattern = PATTERN_P7C;
+        systemState.patternChanged = true;
+        handlePatternChange(PATTERN_P7C);
+        delay(DEBOUNCE_DELAY);
+    }
+    if (digitalRead(BTN_P7D_PIN) == LOW && systemState.currentPattern != PATTERN_P7D) {
+        systemState.currentPattern = PATTERN_P7D;
+        systemState.patternChanged = true;
+        handlePatternChange(PATTERN_P7D);
+        delay(DEBOUNCE_DELAY);
     }
 }
 
@@ -205,7 +244,6 @@ void handlePatternChange(PatternType newPattern) {
 /**
  * NOWA FUNKCJA v1.3.0: Sprawdzanie przycisku START GAP
  * Przełącza tryb "start od przerwy"
- * ZMIANA v1.4.0: Non-blocking (bez delay)
  */
 void checkStartGapButton() {
     static unsigned long lastPressTime = 0;
@@ -230,7 +268,6 @@ void checkStartGapButton() {
 
 /**
  * Sprawdzanie przycisku odwracania wzorca
- * ZMIANA v1.4.0: Non-blocking (bez delay)
  */
 void checkReverseButton() {
     static unsigned long lastPressTime = 0;
@@ -248,34 +285,31 @@ void checkReverseButton() {
 
 /**
  * Sprawdzanie przycisków Start/Pauza i Stop
- * ZMIANA v1.4.0: Non-blocking debounce (bez delay)
- * NAPRAWA v1.4.0: START GAP BUG - nie resetuje distance gdy Start Gap aktywny
  */
 void checkControlButtons() {
     static unsigned long stopPressTime = 0;
     static bool stopPressed = false;
-    static unsigned long lastStartRelease = 0;
 
-    // Przycisk START/PAUZA - ZMIANA: Non-blocking
+    // Przycisk START/PAUZA
     if (digitalRead(BTN_START_PIN) == LOW) {
-        if (millis() - lastStartRelease > DEBOUNCE_DELAY) {
+        delay(DEBOUNCE_DELAY);
+        if (digitalRead(BTN_START_PIN) == LOW) {
             if (systemState.state == STATE_IDLE) {
                 systemState.state = STATE_PAINTING;
                 systemState.startTime = millis();
                 systemState.lastMovementTime = millis();
                 systemState.lastDistance = systemState.distance;
                 DEBUG_PRINTLN("START MALOWANIA");
-                lastStartRelease = millis();
             } else if (systemState.state == STATE_PAINTING) {
                 systemState.state = STATE_PAUSED;
                 DEBUG_PRINTLN("PAUZA");
-                lastStartRelease = millis();
             } else if (systemState.state == STATE_PAUSED) {
                 systemState.state = STATE_PAINTING;
                 systemState.lastMovementTime = millis();
                 DEBUG_PRINTLN("WZNOWIENIE");
-                lastStartRelease = millis();
             }
+            while (digitalRead(BTN_START_PIN) == LOW) delay(10);
+            delay(DEBOUNCE_DELAY);
         }
     }
 
@@ -299,20 +333,8 @@ void checkControlButtons() {
             systemState.state = STATE_IDLE;
             relays.stopAll();
             systemState.totalPaintedArea = 0;
-
-            // NAPRAWA v1.4.0: START GAP BUG
-            // Nie resetuj distance gdy Start Gap jest aktywny
-            if (!systemState.startFromGap) {
-                systemState.distance = 0;
-                encoder.resetDistance();
-            } else {
-                // Start Gap aktywny - nie resetuj distance
-                DEBUG_PRINTLN("START GAP: Distance nie zresetowany");
-            }
-
+            systemState.distance = 0;
             systemState.lastDistance = 0;
-            systemState.offsetDistance = 0.0;
-            systemState.startFromGap = false;  // Wyłącz Start Gap po STOP
             DEBUG_PRINTLN("STOP - Reset liczników");
         }
         stopPressed = false;
@@ -344,16 +366,11 @@ void calculatePaintedArea() {
 }
 
 /**
- * ZOPTYMALIZOWANA FUNKCJA v1.4.0: Główna logika malowania wzorców
- *
- * OPTYMALIZACJE v1.4.0:
- * - Integer math zamiast float fmod() - znacznie SZYBSZE (modulo integer)
- * - Faktyczna implementacja REVERSE (zamiana pistoletów P1↔P4, P2↔P5, P3↔P6)
- *
- * POPRAWKI v1.3.0:
- * - Zabezpieczenie przed malowaniem na postoju (< 2km/h)
- * - Sprawdzanie ruchu enkodera
- * - Prawidłowe mapowanie pistoletów według specyfikacji
+ * PRZEPISANA FUNKCJA: Główna logika malowania wzorców
+ * POPRAWKI KRYTYCZNE:
+ * 1. Zabezpieczenie przed malowaniem na postoju (< 2km/h)
+ * 2. Sprawdzanie ruchu enkodera
+ * 3. Prawidłowe mapowanie pistoletów według specyfikacji
  */
 void processPainting() {
     // Jeśli nie malujemy - wyłącz wszystko
@@ -384,6 +401,8 @@ void processPainting() {
     bool activeGuns[6];
     getActiveGuns(systemState.currentPattern, activeGuns);
 
+    float distanceMeters = systemState.distance / 100.0;
+
     // Dla wzorców ciągłych - włącz pistolety
     if (pattern->lineLength <= 0) {
         // Ciągłe malowanie - włącz aktywne pistolety
@@ -393,39 +412,21 @@ void processPainting() {
         return;
     }
 
-    // OPTYMALIZACJA v1.4.0: Integer math zamiast float fmod()
     // Dla wzorców przerwanych - oblicz czy jesteśmy w linii czy przerwie
     // NOWE v1.3.0: Uwzględnij offset z Start Gap
-
-    long distanceCm = systemState.distance - systemState.patternStartDistance;
-    long effectiveDistanceCm = distanceCm - (long)(systemState.offsetDistance * 100.0);
+    float distanceFromPatternStart = (systemState.distance - systemState.patternStartDistance) / 100.0; // cm → m
+    float effectiveDistance = distanceFromPatternStart - systemState.offsetDistance;
 
     // Jeśli wciąż w fazie offsetu (przerwy), nie maluj
-    if (effectiveDistanceCm < 0) {
+    if (effectiveDistance < 0) {
         relays.stopAll();
         return;
     }
 
-    // OPTYMALIZACJA v1.4.0: Integer modulo - ZNACZNIE SZYBSZE niż fmod()!
-    long cycleLengthCm = (long)(pattern->lineLength * 100.0) + (long)(pattern->gapLength * 100.0);
-    long positionInCycleCm = effectiveDistanceCm % cycleLengthCm;  // Modulo integer - SZYBKIE!
-    long lineLengthCm = (long)(pattern->lineLength * 100.0);
+    float cycleLength = pattern->lineLength + pattern->gapLength;
+    float positionInCycle = fmod(effectiveDistance, cycleLength);
 
-    bool shouldPaint = (positionInCycleCm < lineLengthCm);
-
-    // NAPRAWA v1.4.0: REVERSE - faktyczna implementacja zamiany pistoletów
-    // Dla wzorców P-3a i P-3b gdy REVERSE aktywny: zamień pistolety lewo↔prawo
-    if (systemState.patternReversed &&
-        (systemState.currentPattern == PATTERN_P3A || systemState.currentPattern == PATTERN_P3B)) {
-        // Zamień pistolety: P1↔P4, P2↔P5, P3↔P6
-        // To odwraca stronę lewą z prawą (linia ciągła <-> przerywana)
-        bool temp;
-        temp = activeGuns[0]; activeGuns[0] = activeGuns[3]; activeGuns[3] = temp;
-        temp = activeGuns[1]; activeGuns[1] = activeGuns[4]; activeGuns[4] = temp;
-        temp = activeGuns[2]; activeGuns[2] = activeGuns[5]; activeGuns[5] = temp;
-
-        DEBUG_PRINTLN("REVERSE: Pistolety zamienione lewo<->prawo");
-    }
+    bool shouldPaint = (positionInCycle < pattern->lineLength);
 
     if (shouldPaint) {
         // Jesteśmy w linii - włącz aktywne pistolety
@@ -436,6 +437,10 @@ void processPainting() {
         // Jesteśmy w przerwie - wyłącz wszystko
         relays.stopAll();
     }
+
+    // SPECJALNE: Odwracanie wzorców P-3a, P-3b
+    // TODO: Implementacja odwracania (linia ciągła lewo<->prawo)
+    // Na razie używamy standardowego mapowania z patterns.h
 }
 
 /**
@@ -464,7 +469,6 @@ void updateDisplay() {
 
 /**
  * Setup - inicjalizacja systemu
- * ZMIANA v1.4.0: Dodano inicjalizację mutexów dla thread-safety
  */
 void setup() {
     Serial.begin(115200);
@@ -474,17 +478,7 @@ void setup() {
     Serial.printf("Build: %s %s\n", BUILD_DATE, BUILD_TIME);
     Serial.println("=================================\n");
 
-    // NOWE v1.4.0: Inicjalizacja mutexów FreeRTOS
-    Serial.println("Inicjalizacja mutexów...");
-    stateMutex = xSemaphoreCreateMutex();
-    encoderMutex = xSemaphoreCreateMutex();
-    if (!stateMutex || !encoderMutex) {
-        Serial.println("FATAL: Nie można utworzyć mutexów!");
-        while(1) delay(1000);
-    }
-    Serial.println("Mutexy utworzone (thread-safety aktywny)");
-
-    // NOWE v1.3.0: Watchdog timer (10 sekund)
+    // NOWE: Watchdog timer (10 sekund)
     Serial.println("Inicjalizacja watchdog timer...");
     esp_task_wdt_init(10, true);  // 10 sekund timeout, panic on timeout
     esp_task_wdt_add(NULL);       // Dodaj current task
@@ -570,7 +564,7 @@ void loop() {
     static unsigned long lastEncoderUpdate = 0;
     unsigned long currentTime = millis();
 
-    // NOWE v1.3.0: Reset watchdog timer co iterację
+    // NOWE: Reset watchdog timer co iterację
     esp_task_wdt_reset();
 
     // Obsługa enkodera (co 10ms)

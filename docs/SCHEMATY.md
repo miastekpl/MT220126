@@ -1,5 +1,42 @@
 # Schematy Połączeń
-## System Sterowania Malowaniem Pasów Drogowych v1.0.0
+## System Sterowania Malowaniem Pasów Drogowych v1.4.0
+
+---
+
+## ⚠️ ZMIANY w wersji 1.4.0 - KOMPLEKSOWA REFAKTORYZACJA GPIO
+
+### Dlaczego zmieniono piny?
+
+Oryginalna dokumentacja v1.0.0 zawierała **KRYTYCZNE KONFLIKTY GPIO**:
+- Niektóre piny były wykorzystane 3x jednocześnie!
+- GPIO 25, 26, 27, 32-35 miały konflikty między enkoderami, joystickiem, przekaźnikami i przyciskami
+- Brakowało osobnego selektora menu (używano przycisku enkodera, który był na pinie z konfliktem)
+
+### Co się zmieniło?
+
+#### 1. **Przekaźniki** (Pistolety malarskie)
+- **PRZED**: GPIO 13, 12, 14, 27, 26, 25 (rozproszone, z konfliktami)
+- **PO**: GPIO 12-17 (ciągła grupa, łatwy routing PCB, bez konfliktów)
+
+#### 2. **Przyciski sterowania**
+- **BTN_START**: 12 → **0** (Boot pin, bezpieczny z INPUT_PULLUP)
+- **BTN_STOP**: 13 → **2** (wolny pin)
+- **BTN_REVERSE**: 15 → **4** (wolny pin)
+- **BTN_START_GAP**: **46** (NOWY w v1.3.0)
+
+#### 3. **Selektor menu**
+- **NOWY**: GPIO **20** (osobny przycisk do nawigacji menu)
+- Enkoder pozostaje tylko do pomiaru dystansu!
+
+#### 4. **Przyciski wzorców** (15 przycisków)
+- **PRZED**: Rozproszone, z konfliktami (GPIO 2, 4, 14-17, 25-27, 32-36, 39)
+- **PO**: ESP32-S3 specific GPIOs (26-27, 36-48, 1)
+  - Wykorzystano GPIO 36-48 (dostępne tylko na ESP32-S3!)
+  - GPIO 1 (UART TX) używany jako INPUT_PULLUP (bezpieczne)
+
+#### 5. **Enkoder i Joystick**
+- **BEZ ZMIAN**: GPIO 32-35 (enkoder + joystick osie)
+- Usunięto konflikt z przekaźnikami i przyciskami
 
 ---
 
@@ -56,30 +93,47 @@
 
 ## 2. Schemat Połączeń ESP32-S3
 
-### 2.1 Mapowanie Pinów
+### 2.1 Mapowanie Pinów (✅ v1.4.0 - POPRAWIONE)
+
+**UWAGA**: Schemat poniżej jest uproszczony dla czytelności.
+ESP32-S3 N16R8 ma 49 GPIO (0-48), nie wszystkie są wyprowadzone na standardowych pinach.
 
 ```
-                      ESP32-S3 (Widok z góry)
-                    ┌─────────────────────┐
-               3.3V │ 1              40 │ GND
-         (TFT_RST)  │ 2 GPIO21      39 │ GPIO36 (BTN_P2A)
-         (TFT_DC)   │ 3 GPIO22      38 │ GPIO39 (BTN_P2B)
-         (TFT_MOSI) │ 4 GPIO23      37 │ GPIO34 (JOY_X/BTN_P3A)
-                    │ 5 GPIO19      36 │ GPIO35 (JOY_Y/BTN_P3B)
-         (TFT_SCLK) │ 6 GPIO18      35 │ GPIO32 (ENC_CLK/BTN_P4)
-         (BTN_P7D)  │ 7 GPIO14      34 │ GPIO33 (ENC_DT/BTN_P6)
-         (RELAY_3)  │ 8 GPIO14      33 │ GPIO25 (ENC_SW/RELAY_6)
-         (RELAY_2)  │ 9 GPIO12      32 │ GPIO26 (JOY_SW/RELAY_5)
-         (RELAY_1)  │10 GPIO13      31 │ GPIO27 (RELAY_4/BTN_P7C)
-         (BTN_P1A)  │11 GPIO15      30 │ GPIO16 (BTN_P1B)
-         (BTN_P1C)  │12 GPIO17      29 │ GPIO4  (BTN_P1D)
-         (TFT_CS)   │13 GPIO5       28 │ GPIO2  (BTN_P1E)
-                GND │14             27 │ 3.3V
-                5V  │15             26 │ EN
-                    └─────────────────────┘
+                      ESP32-S3 (Kluczowe GPIO - v1.4.0)
+
+   WYŚWIETLACZ SPI:          PRZEKAŹNIKI (ciągła grupa):
+   ┌──────────────┐          ┌──────────────────────┐
+   │ GPIO 5  (CS) │          │ GPIO 12 → RELAY_1    │
+   │ GPIO 18 (SCK)│          │ GPIO 13 → RELAY_2    │
+   │ GPIO 19 (MISO)│         │ GPIO 14 → RELAY_3    │
+   │ GPIO 21 (RST)│          │ GPIO 15 → RELAY_4    │
+   │ GPIO 22 (DC) │          │ GPIO 16 → RELAY_5    │
+   │ GPIO 23 (MOSI)│         │ GPIO 17 → RELAY_6    │
+   └──────────────┘          └──────────────────────┘
+
+   ENKODER + JOYSTICK:       STEROWANIE:
+   ┌──────────────┐          ┌──────────────────────┐
+   │ GPIO 32 (ENC_CLK)│      │ GPIO 0  → START      │
+   │ GPIO 33 (ENC_DT) │      │ GPIO 2  → STOP       │
+   │ GPIO 34 (JOY_X)  │      │ GPIO 4  → REVERSE    │
+   │ GPIO 35 (JOY_Y)  │      │ GPIO 46 → START_GAP  │
+   └──────────────┘          │ GPIO 20 → SELEKTOR   │
+                             └──────────────────────┘
+
+   PRZYCISKI WZORCÓW (ESP32-S3 specific GPIO 26-48):
+   ┌────────────────────────────────────────────────┐
+   │ GPIO 26→P1A  27→P1B  36→P1C  37→P1D  38→P1E  │
+   │ GPIO 39→P2A  40→P2B  41→P3A  42→P3B  43→P4   │
+   │ GPIO 44→P6   45→P7A  47→P7B  48→P7C  1→P7D   │
+   └────────────────────────────────────────────────┘
+
+   ⚠️ UWAGI SPECJALNE:
+   - GPIO 36, 39: Input-only (zewnętrzne pull-up 10kΩ)
+   - GPIO 0: Boot pin (nie trzymaj przy starcie)
+   - GPIO 1: UART TX (jako INPUT_PULLUP gdy Serial nieużywany)
 ```
 
-### 2.2 Tabela Pinów
+### 2.2 Tabela Pinów (✅ v1.4.0 - POPRAWIONE)
 
 | GPIO | Funkcja | Typ | Opis |
 |------|---------|-----|------|
@@ -93,37 +147,46 @@
 | **Enkoder** ||||
 | 32 | ENC_CLK | Input | Encoder Clock (przerwanie) |
 | 33 | ENC_DT | Input | Encoder Data |
-| 25 | ENC_SW | Input | Encoder Button |
+| **Selektor Menu** ||||
+| 20 | SELECTOR | Input | Przycisk nawigacji menu (NOWY!) |
 | **Joystick** ||||
 | 34 | JOY_X | ADC | Oś X (analogowa) |
 | 35 | JOY_Y | ADC | Oś Y (analogowa) |
-| 26 | JOY_SW | Input | Przycisk joysticka |
 | **Przekaźniki** ||||
-| 13 | RELAY_1 | Output | Pistolet 1 (lewy) |
-| 12 | RELAY_2 | Output | Pistolet 2 |
-| 14 | RELAY_3 | Output | Pistolet 3 |
-| 27 | RELAY_4 | Output | Pistolet 4 |
-| 26 | RELAY_5 | Output | Pistolet 5 |
-| 25 | RELAY_6 | Output | Pistolet 6 (prawy) |
-| **Przyciski** ||||
-| 15 | BTN_P1A | Input | Wzorzec P-1a |
-| 16 | BTN_P1B | Input | Wzorzec P-1b |
-| 17 | BTN_P1C | Input | Wzorzec P-1c |
-| 4 | BTN_P1D | Input | Wzorzec P-1d |
-| 2 | BTN_P1E | Input | Wzorzec P-1e |
-| 36 | BTN_P2A | Input | Wzorzec P-2a |
-| 39 | BTN_P2B | Input | Wzorzec P-2b |
-| 34 | BTN_P3A | Input | Wzorzec P-3a |
-| 35 | BTN_P3B | Input | Wzorzec P-3b |
-| 32 | BTN_P4 | Input | Wzorzec P-4 |
-| 33 | BTN_P6 | Input | Wzorzec P-6 |
-| 25 | BTN_P7A | Input | Wzorzec P-7a |
-| 26 | BTN_P7B | Input | Wzorzec P-7b |
-| 27 | BTN_P7C | Input | Wzorzec P-7c |
-| 14 | BTN_P7D | Input | Wzorzec P-7d |
-| 12 | BTN_START | Input | Start/Pauza |
-| 13 | BTN_STOP | Input | Stop |
-| 15 | BTN_REVERSE | Input | Odwróć wzorzec |
+| 12 | RELAY_1 | Output | Pistolet 1 (oś, 12cm) |
+| 13 | RELAY_2 | Output | Pistolet 2 (oś, 12cm) |
+| 14 | RELAY_3 | Output | Pistolet 3 (oś, 12cm) |
+| 15 | RELAY_4 | Output | Pistolet 4 (oś, 24cm) |
+| 16 | RELAY_5 | Output | Pistolet 5 (krawędź, 12cm) |
+| 17 | RELAY_6 | Output | Pistolet 6 (krawędź, 24cm) |
+| **Przyciski Sterowania** ||||
+| 0 | BTN_START | Input | Start/Pauza |
+| 2 | BTN_STOP | Input | Stop |
+| 4 | BTN_REVERSE | Input | Odwróć wzorzec (P-3a/P-3b) |
+| 46 | BTN_START_GAP | Input | Start Od Przerwy (v1.3.0) |
+| **Przyciski Wzorców** ||||
+| 26 | BTN_P1A | Input | Wzorzec P-1a |
+| 27 | BTN_P1B | Input | Wzorzec P-1b |
+| 36 | BTN_P1C | Input | Wzorzec P-1c (input-only) |
+| 37 | BTN_P1D | Input | Wzorzec P-1d |
+| 38 | BTN_P1E | Input | Wzorzec P-1e |
+| 39 | BTN_P2A | Input | Wzorzec P-2a (input-only) |
+| 40 | BTN_P2B | Input | Wzorzec P-2b |
+| 41 | BTN_P3A | Input | Wzorzec P-3a |
+| 42 | BTN_P3B | Input | Wzorzec P-3b |
+| 43 | BTN_P4 | Input | Wzorzec P-4 |
+| 44 | BTN_P6 | Input | Wzorzec P-6 |
+| 45 | BTN_P7A | Input | Wzorzec P-7a |
+| 47 | BTN_P7B | Input | Wzorzec P-7b |
+| 48 | BTN_P7C | Input | Wzorzec P-7c |
+| 1 | BTN_P7D | Input | Wzorzec P-7d (UART TX, INPUT_PULLUP) |
+
+**⚠️ UWAGI**:
+- GPIO 36, 39: Input-only pins (bez wbudowanych pull-up, wymagają zewnętrznych rezystorów 10kΩ)
+- GPIO 1 (BTN_P7D): UART TX - bezpieczne jako INPUT_PULLUP gdy Serial nie używany w loop()
+- GPIO 0 (BTN_START): Boot pin - bezpieczne z INPUT_PULLUP, nie trzymaj wciśniętego przy starcie!
+- GPIO 12-17: Ciągła grupa przekaźników - łatwy routing PCB
+- GPIO 26-48: ESP32-S3 specific GPIOs (36-48 dostępne tylko na S3!)
 
 ---
 
@@ -157,7 +220,7 @@
 
 ---
 
-## 4. Enkoder KY-040
+## 4. Enkoder KY-040 (✅ v1.4.0)
 
 ### 4.1 Schemat Połączenia
 
@@ -167,7 +230,7 @@
    │            │                      │          │
    │ CLK     ●──┼──────────────────────┤ GPIO 32  │ (Przerwanie)
    │ DT      ●──┼──────────────────────┤ GPIO 33  │
-   │ SW      ●──┼──────────────────────┤ GPIO 25  │
+   │ SW      ●──┼──── NIE UŻYWANY      │          │ ⚠️ Zmiana!
    │ +       ●──┼──────────────────────┤ 3.3V     │
    │ GND     ●──┼──────────────────────┤ GND      │
    │            │                      │          │
@@ -178,6 +241,11 @@
    │   Enkoder       │
    │   KY-040        │◄──── Pasek zębaty lub koło
    └─────────────────┘
+
+   Selektor Menu (osobny przycisk):
+   ┌────────────┐                      ┌──────────┐
+   │ Przycisk   │──────────────────────┤ GPIO 20  │ NOWY!
+   └────────────┘                      └──────────┘
 ```
 
 ### 4.2 Uwagi Montażowe
@@ -187,9 +255,20 @@
 - **CLK Pin**: Podłączony do pinu z przerwaniem dla dokładności
 - **Pull-up**: Wbudowane w ESP32 (INPUT_PULLUP)
 
+### 4.3 ⚠️ ZMIANA v1.4.0: Enkoder vs Selektor
+
+**PRZED (v1.0.0)**:
+- Enkoder KY-040 używany do: pomiarów dystansu + nawigacja menu (przycisk SW)
+- GPIO 25 (ENC_SW) - konflikt z przekaźnikiem!
+
+**PO (v1.4.0)**:
+- **Enkoder KY-040**: TYLKO do pomiaru dystansu (CLK + DT)
+- **Selektor (GPIO 20)**: Osobny przycisk do nawigacji menu
+- Brak konfliktów GPIO!
+
 ---
 
-## 5. Joystick Analogowy
+## 5. Joystick Analogowy (✅ v1.4.0)
 
 ### 5.1 Schemat Połączenia
 
@@ -199,7 +278,7 @@
    │            │                      │          │
    │ VRX     ●──┼──────────────────────┤ GPIO 34  │ (ADC1_CH6)
    │ VRY     ●──┼──────────────────────┤ GPIO 35  │ (ADC1_CH7)
-   │ SW      ●──┼──────────────────────┤ GPIO 26  │
+   │ SW      ●──┼──── NIE UŻYWANY      │          │ ⚠️ Zmiana!
    │ VCC     ●──┼──────────────────────┤ 3.3V     │
    │ GND     ●──┼──────────────────────┤ GND      │
    │            │                      │          │
@@ -219,9 +298,19 @@
 - **Rozdzielczość**: 12-bit (0-4095)
 - **Kalibracja**: Wartość środkowa może się różnić (~1800-2200)
 
+### 5.3 ⚠️ ZMIANA v1.4.0: Joystick bez przycisku
+
+**PRZED (v1.0.0)**:
+- GPIO 26 (JOY_SW) - konflikt z przekaźnikiem RELAY_5!
+
+**PO (v1.4.0)**:
+- Joystick używa TYLKO osi analogowych (VRX, VRY)
+- Przycisk joysticka (SW) NIE UŻYWANY
+- Do nawigacji menu: joystick osie + selektor (GPIO 20)
+
 ---
 
-## 6. Moduły Przekaźników
+## 6. Moduły Przekaźników (✅ v1.4.0 - NOWE PINY!)
 
 ### 6.1 Schemat Połączenia (Moduł 6-kanałowy)
 
@@ -231,14 +320,24 @@
    │                    │             │          │
    │ VCC         ●──────┼─────────────┤ 5V       │ (Zewnętrzne!)
    │ GND         ●──────┼─────────────┤ GND      │
-   │ IN1 (Rel 1) ●──────┼─────────────┤ GPIO 13  │
-   │ IN2 (Rel 2) ●──────┼─────────────┤ GPIO 12  │
+   │ IN1 (Rel 1) ●──────┼─────────────┤ GPIO 12  │ ← ZMIANA
+   │ IN2 (Rel 2) ●──────┼─────────────┤ GPIO 13  │ ← ZMIANA
    │ IN3 (Rel 3) ●──────┼─────────────┤ GPIO 14  │
-   │ IN4 (Rel 4) ●──────┼─────────────┤ GPIO 27  │
-   │ IN5 (Rel 5) ●──────┼─────────────┤ GPIO 26  │
-   │ IN6 (Rel 6) ●──────┼─────────────┤ GPIO 25  │
+   │ IN4 (Rel 4) ●──────┼─────────────┤ GPIO 15  │ ← ZMIANA
+   │ IN5 (Rel 5) ●──────┼─────────────┤ GPIO 16  │ ← ZMIANA
+   │ IN6 (Rel 6) ●──────┼─────────────┤ GPIO 17  │ ← ZMIANA
    │                    │             │          │
    └────────────────────┘             └──────────┘
+
+   Mapowanie Pistoletów:
+   ┌─────────────────────────────────────────────────┐
+   │ RELAY_1 (GPIO 12) → Pistolet P1 (oś, 12cm)     │
+   │ RELAY_2 (GPIO 13) → Pistolet P2 (oś, 12cm)     │
+   │ RELAY_3 (GPIO 14) → Pistolet P3 (oś, 12cm)     │
+   │ RELAY_4 (GPIO 15) → Pistolet P4 (oś, 24cm)     │
+   │ RELAY_5 (GPIO 16) → Pistolet P5 (krawędź, 12cm)│
+   │ RELAY_6 (GPIO 17) → Pistolet P6 (krawędź, 24cm)│
+   └─────────────────────────────────────────────────┘
 
    Wyjścia przekaźników (każdy kanał):
    ┌──────────────┐
@@ -249,6 +348,17 @@
         │   └──────── Wspólny
         └──────────── Normalnie zamknięty
 ```
+
+### 6.1.1 ⚠️ ZMIANA v1.4.0: Piny Przekaźników
+
+**PRZED (v1.0.0)**: GPIO 13, 12, 14, 27, 26, 25 (rozproszone, z konfliktami)
+**PO (v1.4.0)**: GPIO **12-17** (ciągła grupa)
+
+**Zalety nowego mapowania**:
+- ✅ Ciągła grupa GPIO (łatwy routing na PCB)
+- ✅ Brak konfliktów z przyciskami, enkoderami, joystickiem
+- ✅ Logiczne uporządkowanie (12→P1, 13→P2, ... 17→P6)
+- ✅ Łatwiejsze debugowanie (sekwencja numeryczna)
 
 ### 6.2 Podłączenie Pistoletów
 
@@ -281,7 +391,7 @@ Pistolet malarskiElektrozawór
 
 ---
 
-## 7. Przyciski
+## 7. Przyciski (✅ v1.4.0 - NOWE PINY!)
 
 ### 7.1 Schemat Pojedynczego Przycisku
 
@@ -304,33 +414,93 @@ Pistolet malarskiElektrozawór
    - Naciśnięty: LOW (GND)
 ```
 
-### 7.2 Panel Przycisków (Sugerowany Layout)
+### 7.2 Panel Przycisków (Sugerowany Layout v1.4.0)
 
 ```
-┌──────────────────────────────────────────────────┐
-│              PANEL STEROWANIA                    │
-├──────────────────────────────────────────────────┤
-│  WZORCE MALOWANIA:                               │
-│                                                  │
-│  [P-1a] [P-1b] [P-1c] [P-1d] [P-1e]             │
-│                                                  │
-│  [P-2a] [P-2b] [P-3a] [P-3b] [P-4 ]             │
-│                                                  │
-│  [P-6 ] [P-7a] [P-7b] [P-7c] [P-7d]             │
-│                                                  │
-├──────────────────────────────────────────────────┤
-│  STEROWANIE:                                     │
-│                                                  │
-│  [START/PAUZA]    [STOP]    [REVERSE]            │
-│                                                  │
-└──────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│              PANEL STEROWANIA v1.4.0                 │
+├──────────────────────────────────────────────────────┤
+│  WZORCE MALOWANIA:                                   │
+│                                                      │
+│  [P-1a] [P-1b] [P-1c] [P-1d] [P-1e]                 │
+│  GPIO:   26     27     36     37     38              │
+│                                                      │
+│  [P-2a] [P-2b] [P-3a] [P-3b] [P-4 ]                 │
+│  GPIO:   39     40     41     42     43              │
+│                                                      │
+│  [P-6 ] [P-7a] [P-7b] [P-7c] [P-7d]                 │
+│  GPIO:   44     45     47     48      1              │
+│                                                      │
+├──────────────────────────────────────────────────────┤
+│  STEROWANIE:                                         │
+│                                                      │
+│  [START/PAUZA]  [STOP]  [REVERSE]  [START GAP]      │
+│  GPIO: 0        2       4          46                │
+│                                      (v1.3.0)        │
+│                                                      │
+├──────────────────────────────────────────────────────┤
+│  NAWIGACJA MENU:                                     │
+│                                                      │
+│  [Joystick] (GPIO 34/35) + [SELEKTOR] (GPIO 20)     │
+│                                                      │
+└──────────────────────────────────────────────────────┘
 ```
 
-### 7.3 Uwagi
+### 7.3 Mapowanie Przycisków - Kompletna Tabela
 
-- Wszystkie przyciski: **INPUT_PULLUP** (wbudowany pull-up ESP32)
-- Debouncing: 50ms opóźnienie w software
-- Oznaczenie: Każdy przycisk wyraźnie opisany
+#### Przyciski Wzorców (15 wzorców)
+| Przycisk | GPIO | Uwagi |
+|----------|------|-------|
+| P-1a | 26 | Standardowy I/O |
+| P-1b | 27 | Standardowy I/O |
+| P-1c | 36 | **Input-only** (wymaga zewnętrznego pull-up 10kΩ) |
+| P-1d | 37 | Standardowy I/O |
+| P-1e | 38 | Standardowy I/O |
+| P-2a | 39 | **Input-only** (wymaga zewnętrznego pull-up 10kΩ) |
+| P-2b | 40 | Standardowy I/O |
+| P-3a | 41 | Standardowy I/O |
+| P-3b | 42 | Standardowy I/O |
+| P-4  | 43 | Standardowy I/O |
+| P-6  | 44 | Standardowy I/O |
+| P-7a | 45 | Standardowy I/O |
+| P-7b | 47 | Standardowy I/O |
+| P-7c | 48 | Standardowy I/O |
+| P-7d | 1  | **UART TX** (INPUT_PULLUP gdy Serial nieużywany) |
+
+#### Przyciski Sterowania (4 przyciski)
+| Przycisk | GPIO | Uwagi |
+|----------|------|-------|
+| START/PAUZA | 0 | **Boot pin** (nie trzymaj wciśniętego przy starcie!) |
+| STOP | 2 | Standardowy I/O |
+| REVERSE | 4 | Standardowy I/O |
+| START GAP | 46 | Nowy w v1.3.0 |
+
+#### Nawigacja Menu
+| Funkcja | GPIO | Uwagi |
+|---------|------|-------|
+| Joystick X | 34 | ADC1 (input-only) |
+| Joystick Y | 35 | ADC1 (input-only) |
+| Selektor | 20 | Nowy w v1.4.0 (osobny od enkodera!) |
+
+### 7.4 Uwagi Montażowe v1.4.0
+
+- **INPUT_PULLUP**: Większość przycisków (wbudowany pull-up ESP32)
+- **GPIO 36, 39**: Input-only, wymagają **zewnętrznych rezystorów pull-up 10kΩ**
+- **GPIO 0**: Boot pin - NIE TRZYMAJ wciśniętego podczas startu ESP32!
+- **GPIO 1**: UART TX - bezpieczne jako przycisk gdy Serial używany tylko w setup()
+- **Debouncing**: 50ms opóźnienie w software (non-blocking)
+- **Oznaczenie**: Każdy przycisk wyraźnie opisany (etykiety, grawerowanie)
+
+### 7.5 ⚠️ ZMIANY v1.4.0: Przyciski
+
+**PRZED (v1.0.0)**:
+- Przyciski rozproszone: GPIO 2, 4, 12-17, 25-27, 32-36, 39
+- **KONFLIKTY** z enkoderami, przekaźnikami, joystickiem!
+
+**PO (v1.4.0)**:
+- Wykorzystano GPIO **26-27, 36-48, 1** (ESP32-S3 specific!)
+- Sterowanie: GPIO **0, 2, 4, 46**
+- **ZERO KONFLIKTÓW** - każdy pin unikatowy!
 
 ---
 
@@ -554,10 +724,62 @@ Przyłącza zewnętrzne:
 
 ---
 
-**Wersja schematów**: 1.0.0
-**Data**: 2026-01-23
+## 12. Migracja z v1.0.0 do v1.4.0
+
+### 12.1 Checklist Aktualizacji Hardware
+
+Jeśli aktualizujesz z wersji 1.0.0 do 1.4.0, wykonaj następujące kroki:
+
+- [ ] **Przekaźniki**: Przepnij przewody z GPIO (13,12,14,27,26,25) → (12,13,14,15,16,17)
+- [ ] **BTN_START**: Przepnij z GPIO 12 → GPIO 0
+- [ ] **BTN_STOP**: Przepnij z GPIO 13 → GPIO 2
+- [ ] **BTN_REVERSE**: Przepnij z GPIO 15 → GPIO 4
+- [ ] **BTN_START_GAP**: Dodaj nowy przycisk na GPIO 46 (v1.3.0)
+- [ ] **SELEKTOR**: Dodaj nowy przycisk na GPIO 20 (zamiast ENC_SW)
+- [ ] **Przyciski wzorców**: Przepnij WSZYSTKIE według nowej tabeli (sekcja 7.3)
+- [ ] **GPIO 36, 39**: Dodaj zewnętrzne rezystory pull-up 10kΩ (input-only pins)
+- [ ] **Enkoder SW**: Odłącz (nie używany)
+- [ ] **Joystick SW**: Odłącz (nie używany)
+
+### 12.2 Weryfikacja Po Aktualizacji
+
+```
+[ ] Test zasilania (3.3V, 5V, 12V)
+[ ] Test wyświetlacza (SPI OK)
+[ ] Test enkodera (CLK + DT)
+[ ] Test joysticka (osie X, Y)
+[ ] Test selektora (GPIO 20)
+[ ] Test przekaźników (sekwencja 12→13→14→15→16→17)
+[ ] Test przycisków sterowania (START, STOP, REVERSE, START_GAP)
+[ ] Test wszystkich 15 przycisków wzorców
+[ ] Upload firmware v1.4.0
+[ ] Test całego systemu
+```
+
+### 12.3 Troubleshooting
+
+**Problem**: Przyciski nie reagują
+- **Sprawdź**: Czy GPIO 36/39 mają zewnętrzne pull-up 10kΩ?
+- **Sprawdź**: Czy GPIO 0 nie jest przytrzymany podczas startu?
+
+**Problem**: Przekaźniki nie działają
+- **Sprawdź**: Czy używasz nowych pinów 12-17?
+- **Sprawdź**: Logikę (LOW = ON, HIGH = OFF na większości modułów)
+
+**Problem**: Menu nie działa
+- **Sprawdź**: Czy selektor podłączony do GPIO 20?
+- **Sprawdź**: Czy enkoder SW odłączony?
+
+---
+
+**Wersja schematów**: **1.4.0** (Kompleksowa refaktoryzacja GPIO)
+**Data ostatniej aktualizacji**: 2026-01-23
+**Poprzednie wersje**: 1.0.0 (2026-01-23), 1.2.0 (WiFi), 1.3.0 (Start Gap)
 **Inżynier**: MT220126 Engineering Team
 
 ---
 
 **UWAGA**: Schematy mają charakter poglądowy. Przed wdrożeniem produkcyjnym zaleca się weryfikację przez certyfikowanego elektryka/elektronika.
+
+**⚠️ KRYTYCZNE**: Dokumentacja v1.0.0 zawierała błędy w mapowaniu GPIO (konflikty)!
+Zawsze używaj najnowszej wersji: **v1.4.0**
