@@ -1,0 +1,44 @@
+INSTRUKCJA INTEGRACJI WIFI SERVERA
+===================================
+
+Aby zintegrować WiFi server z main.cpp, dodaj następujące kroki:
+
+1. W main.cpp dodaj na początku:
+   #include "wifi_server.h"
+
+2. Dodaj globalny obiekt po innych obiektach:
+   WiFiServerManager wifiServer(&systemState, &relays, &encoder);
+
+3. W setup() dodaj przed końcem:
+   Serial.println("Inicjalizacja WiFi...");
+   wifiServer.init();
+   Serial.printf("WiFi gotowy! IP: %s\n", wifiServer.getIP().c_str());
+
+4. W loop() dodaj (zaraz po esp_task_wdt_reset()):
+   wifiServer.update();
+
+5. Skompiluj i wgraj na ESP32-S3
+
+UŻYTKOWANIE:
+============
+1. Po uruchomieniu ESP32, podłącz smartfon do sieci WiFi:
+   SSID: Trassar
+   Hasło: 12345678
+
+2. W przeglądarce wejdź na:
+   http://192.168.4.1
+
+3. Panel sterowania:
+   - Wyświetla aktualny stan (wzorzec, prędkość, powierzchnia)
+   - Przyciski START/PAUZA/STOP
+   - Wybór wzorca (P-1a do P-7d)
+   - Odświeżanie co 500ms
+
+API ENDPOINTS:
+==============
+GET /status - JSON ze stanem systemu
+GET /control?action=start|pause|stop - Sterowanie
+GET /pattern?set=P1A|P1B|... - Zmiana wzorca
+
+Ze względu na bezpieczeństwo, system zawsze wymaga fizycznego potwierdzenia
+przez przyciski na urządzeniu dla krytycznych operacji.
