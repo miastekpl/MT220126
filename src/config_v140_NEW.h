@@ -34,12 +34,25 @@
 #define TFT_DC   22
 #define TFT_RST  21
 
-// Enkoder KY-040 (TYLKO DO POMIARÓW - NIE DO MENU!)
+// Enkoder KY-040 PRIMARY (TYLKO DO POMIARÓW - NIE DO MENU!)
 #define ENCODER_CLK_PIN 32  // Z przerwaniem (INT)
 #define ENCODER_DT_PIN  33  // Data
 
+// v1.6.0: Enkoder KY-040 BACKUP (redundancja!)
+// Drugi enkoder dla zwiększenia niezawodności - automatyczne przełączanie przy awarii
+#define ENCODER_BACKUP_CLK_PIN 6   // Z przerwaniem (INT) - ✅ Wolny pin
+#define ENCODER_BACKUP_DT_PIN  7   // Data - ✅ Wolny pin
+#define ENCODER_BACKUP_SW_PIN  19  // Przycisk backup enkodera
+
 // Selektor (przycisk do nawigacji w menu - osobny od enkodera!)
 #define SELECTOR_PIN 20     // ✅ NOWY - wolny pin bez konfliktów
+
+// v1.6.0: SD Card Module (SPI - współdzielony z TFT)
+// Karta SD do zapisu logów - CS pin OSOBNY od TFT!
+#define SD_CS_PIN   4   // Chip Select dla SD (NOWY pin) - ✅ Wolny
+#define SD_MOSI_PIN 23  // SPI MOSI (wspólny z TFT)
+#define SD_MISO_PIN 19  // SPI MISO (wspólny z TFT)
+#define SD_SCK_PIN  18  // SPI SCK (wspólny z TFT)
 
 // Joystick analogowy (tylko osie - przycisk to selektor)
 #define JOYSTICK_X_PIN  34  // ADC1 (input-only)

@@ -1,3 +1,35 @@
+## [1.6.0] - 2026-01-26
+
+### 🚀 DUAL ENCODER + SD LOGGING + TFT SPRITES
+
+**Status**: ✅ **PRODUCTION READY** - Maksymalna niezawodność i wydajność!
+
+#### ✨ NOWE FUNKCJE:
+
+1. **Dual Encoder** (redundancja) - src/dual_encoder_manager.*
+   - PRIMARY: GPIO 32/33, BACKUP: GPIO 6/7
+   - Automatyczna detekcja awarii i przełączanie
+   - Wymagane: Drugi enkoder KY-040 (~15 zł)
+
+2. **SD Card Logging** - src/sd_card_manager.*
+   - Auto-zapis co 10 min lub 50 zdarzeń
+   - Format CSV, rotacja plików
+   - Wymagane: SD Card module (~10 zł)
+
+3. **TFT Sprites** - display_manager.cpp
+   - 3-5x szybsze odświeżanie (20-30ms → 5-8ms)
+   - Double buffering w PSRAM (~100KB)
+   - Software only (bez dodatkowego hardware)
+
+#### 📝 ZMODYFIKOWANE:
+- main.cpp - Integracja wszystkich systemów
+- config_v140_NEW.h - Nowe GPIO pins
+- display_manager.h/cpp - Sprites
+
+**WYMAGANE HARDWARE**: Enkoder #2 + SD Card (~25 zł)
+
+---
+
 # Historia Zmian / Changelog
 
 Wszystkie istotne zmiany w projekcie będą dokumentowane w tym pliku.

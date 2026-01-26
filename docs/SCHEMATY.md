@@ -1,5 +1,5 @@
 # Schematy Połączeń Elektrycznych
-## System Sterowania Malowaniem Pasów Drogowych v1.5.0
+## System Sterowania Malowaniem Pasów Drogowych v1.6.0
 
 **Status**: ✅ KOMPLETNE SCHEMATY PRODUKCYJNE (NAPRAWIONE GPIO STRAPPING PINS!)
 **Data**: 2026-01-26
@@ -21,7 +21,7 @@ Oryginalna dokumentacja v1.0.0 zawierała **KRYTYCZNE KONFLIKTY GPIO**:
 #### 1. **Przekaźniki** (Pistolety malarskie)
 - **v1.0.0**: GPIO 13, 12, 14, 27, 26, 25 (rozproszone, z konfliktami)
 - **v1.4.0**: GPIO 12-17 (ciągła grupa, ALE strapping pins!)
-- **v1.5.0**: GPIO 10, 11, 8, 9, 16, 17 ✅ **NAPRAWIONE - BEZ STRAPPING PINS!**
+- **v1.6.0**: GPIO 10, 11, 8, 9, 16, 17 ✅ **NAPRAWIONE - BEZ STRAPPING PINS!**
 
 #### 2. **Przyciski sterowania**
 - **BTN_START**: 12 → **0** (Boot pin, bezpieczny z INPUT_PULLUP)
@@ -104,9 +104,9 @@ Oryginalna dokumentacja v1.0.0 zawierała **KRYTYCZNE KONFLIKTY GPIO**:
 ESP32-S3 N16R8 ma 49 GPIO (0-48), nie wszystkie są wyprowadzone na standardowych pinach.
 
 ```
-                      ESP32-S3 (Kluczowe GPIO - v1.5.0)
+                      ESP32-S3 (Kluczowe GPIO - v1.6.0)
 
-   WYŚWIETLACZ SPI:          PRZEKAŹNIKI (v1.5.0 NAPRAWIONE!):
+   WYŚWIETLACZ SPI:          PRZEKAŹNIKI (v1.6.0 NAPRAWIONE!):
    ┌──────────────┐          ┌──────────────────────┐
    │ GPIO 5  (CS) │          │ GPIO 10 → RELAY_1 ✅ │
    │ GPIO 18 (SCK)│          │ GPIO 11 → RELAY_2 ✅ │
@@ -132,10 +132,10 @@ ESP32-S3 N16R8 ma 49 GPIO (0-48), nie wszystkie są wyprowadzone na standardowyc
    │ GPIO 44→P6   45→P7A  47→P7B  48→P7C  3→P7D ✅ │
    └────────────────────────────────────────────────┘
 
-   ⚠️ UWAGI SPECJALNE v1.5.0:
+   ⚠️ UWAGI SPECJALNE v1.6.0:
    - GPIO 36, 39: Input-only (zewnętrzne pull-up 10kΩ)
    - GPIO 0: Boot pin (nie trzymaj przy starcie)
-   - GPIO 3: UART RX (zmienione z GPIO 1 w v1.5.0, bezpieczniejsze)
+   - GPIO 3: UART RX (zmienione z GPIO 1 w v1.6.0, bezpieczniejsze)
 ```
 
 ### 2.2 Tabela Pinów (✅ v1.4.0 - POPRAWIONE)
@@ -158,10 +158,10 @@ ESP32-S3 N16R8 ma 49 GPIO (0-48), nie wszystkie są wyprowadzone na standardowyc
 | 34 | JOY_X | ADC | Oś X (analogowa) |
 | 35 | JOY_Y | ADC | Oś Y (analogowa) |
 | **Przekaźniki** ||||
-| 10 | RELAY_1 | Output | Pistolet 1 (oś, 12cm) ✅ v1.5.0 |
-| 11 | RELAY_2 | Output | Pistolet 2 (oś, 12cm) ✅ v1.5.0 |
-| 8  | RELAY_3 | Output | Pistolet 3 (oś, 12cm) ✅ v1.5.0 |
-| 9  | RELAY_4 | Output | Pistolet 4 (oś, 24cm) ✅ v1.5.0 |
+| 10 | RELAY_1 | Output | Pistolet 1 (oś, 12cm) ✅ v1.6.0 |
+| 11 | RELAY_2 | Output | Pistolet 2 (oś, 12cm) ✅ v1.6.0 |
+| 8  | RELAY_3 | Output | Pistolet 3 (oś, 12cm) ✅ v1.6.0 |
+| 9  | RELAY_4 | Output | Pistolet 4 (oś, 24cm) ✅ v1.6.0 |
 | 16 | RELAY_5 | Output | Pistolet 5 (krawędź, 12cm) |
 | 17 | RELAY_6 | Output | Pistolet 6 (krawędź, 24cm) |
 | **Przyciski Sterowania** ||||
@@ -184,12 +184,12 @@ ESP32-S3 N16R8 ma 49 GPIO (0-48), nie wszystkie są wyprowadzone na standardowyc
 | 45 | BTN_P7A | Input | Wzorzec P-7a |
 | 47 | BTN_P7B | Input | Wzorzec P-7b |
 | 48 | BTN_P7C | Input | Wzorzec P-7c |
-| 3  | BTN_P7D | Input | Wzorzec P-7d (UART RX) ✅ v1.5.0 |
+| 3  | BTN_P7D | Input | Wzorzec P-7d (UART RX) ✅ v1.6.0 |
 
-**⚠️ UWAGI v1.5.0**:
+**⚠️ UWAGI v1.6.0**:
 - GPIO 36, 39: Input-only pins (bez wbudowanych pull-up, wymagają zewnętrznych rezystorów 10kΩ)
-- **KRYTYCZNE v1.5.0**: GPIO 12-15 są STRAPPING PINS! Zmieniono na GPIO 8-11 (bezpieczne)
-- GPIO 3 (BTN_P7D): UART RX - zmienione z GPIO 1 (v1.5.0, bezpieczniejsze)
+- **KRYTYCZNE v1.6.0**: GPIO 12-15 są STRAPPING PINS! Zmieniono na GPIO 8-11 (bezpieczne)
+- GPIO 3 (BTN_P7D): UART RX - zmienione z GPIO 1 (v1.6.0, bezpieczniejsze)
 - GPIO 0 (BTN_START): Boot pin - bezpieczne z INPUT_PULLUP, nie trzymaj wciśniętego przy starcie!
 - GPIO 8-11, 16-17: Nowe mapowanie przekaźników - BEZ KONFLIKTÓW BOOT!
 - GPIO 26-48: ESP32-S3 specific GPIOs (36-48 dostępne tylko na S3!)

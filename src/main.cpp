@@ -34,11 +34,13 @@
 #include "relay_controller.h"
 #include "menu_system.h"
 #include "calibration.h"
-#include "service_mode.h"  // NOWE v1.4.1: Tryb serwisowy
-#include "event_logger.h"  // NOWE v1.5.0: System logowania zdarzeń
+#include "service_mode.h"       // NOWE v1.4.1: Tryb serwisowy
+#include "event_logger.h"       // NOWE v1.5.0: System logowania zdarzeń
+#include "dual_encoder_manager.h"  // NOWE v1.6.0: Dual Encoder (redundancja)
+#include "sd_card_manager.h"    // NOWE v1.6.0: SD Card logging
 
 // Wersja oprogramowania
-const char* SOFTWARE_VERSION = "1.5.0";  // ZMIANA v1.5.0: KRYTYCZNE NAPRAWY - GPIO pins, EventLogger, snprintf
+const char* SOFTWARE_VERSION = "1.6.0";  // ZMIANA v1.6.0: Dual Encoder + SD Logging + TFT Sprites
 const char* BUILD_DATE = __DATE__;
 const char* BUILD_TIME = __TIME__;
 
@@ -50,12 +52,13 @@ SemaphoreHandle_t encoderMutex = NULL;
 // Obiekty globalne
 TFT_eSPI tft = TFT_eSPI();
 DisplayManager display(&tft);
-EncoderHandler encoder(ENCODER_CLK_PIN, ENCODER_DT_PIN, SELECTOR_PIN);  // ZMIENIONY: używa SELECTOR
+DualEncoderManager dualEncoder(&eventLogger);  // ZMIANA v1.6.0: Dual Encoder zamiast pojedynczego
 RelayController relays;
-MenuSystem menu(&display, &encoder);
-CalibrationManager calibration(&encoder);
+MenuSystem menu(&display, dualEncoder.getPrimaryEncoder());  // Menu używa primary encoder
+CalibrationManager calibration(dualEncoder.getPrimaryEncoder());  // Kalibracja używa primary
 ServiceMode serviceMode(&display, &relays);  // NOWE v1.4.1: Tryb serwisowy
 EventLogger eventLogger;  // NOWE v1.5.0: System logowania zdarzeń
+SDCardManager sdCard(&eventLogger);  // NOWE v1.6.0: SD Card Manager
 
 // Zmienne stanu systemu
 SystemState systemState;
@@ -526,10 +529,11 @@ void setup() {
     display.showSplashScreen(SOFTWARE_VERSION);
     delay(2000);
 
-    // Inicjalizacja enkodera
-    Serial.println("Inicjalizacja enkodera...");
-    encoder.init();
+    // Inicjalizacja dual enkodera (v1.6.0 - redundancja!)
+    Serial.println("Inicjalizacja DUAL ENCODER...");
+    dualEncoder.init();
     attachInterrupt(digitalPinToInterrupt(ENCODER_CLK_PIN), encoderISR, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(ENCODER_BACKUP_CLK_PIN), encoderISR, CHANGE);  // v1.6.0: Backup encoder
 
     // Inicjalizacja przekaźników
     Serial.println("Inicjalizacja przekaźników...");
@@ -557,6 +561,16 @@ void setup() {
     Serial.println("Inicjalizacja Event Loggera...");
     eventLogger.init();
     eventLogger.log(EVENT_SYSTEM_START, 0, 0, "System uruchomiony");
+
+    // NOWE v1.6.0: Inicjalizacja SD Card
+    Serial.println("Inicjalizacja SD Card...");
+    if (sdCard.init()) {
+        Serial.println("SD Card zainicjalizowana (auto-zapis aktywny)");
+        eventLogger.log(EVENT_SYSTEM_START, 0, 0, "SD Card: OK");
+    } else {
+        Serial.println("UWAGA: SD Card niedostępna (logi tylko w RAM)");
+        eventLogger.log(EVENT_ERROR_OCCURRED, 0, 0, "SD Card: Niedostepna");
+    }
 
     // Sprawdzenie kalibracji
     if (!calibration.isCalibrated()) {
@@ -610,12 +624,12 @@ void loop() {
     // NOWE v1.3.0: Reset watchdog timer co iterację
     esp_task_wdt_reset();
 
-    // Obsługa enkodera (co 10ms)
+    // Obsługa dual enkodera (co 10ms) - v1.6.0
     if (currentTime - lastEncoderUpdate >= 10) {
-        encoder.update();
+        dualEncoder.update();  // v1.6.0: Aktualizacja obu enkoderów + sprawdzanie spójności
 
         if (systemState.state == STATE_PAINTING || systemState.state == STATE_MEASURING) {
-            long newDistance = encoder.getDistance();
+            long newDistance = dualEncoder.getDistance();  // v1.6.0: Z aktywnego enkodera
             if (newDistance != systemState.distance) {
                 // NAPRAWA v1.4.2: Zapisz stary dystans PRZED zmianą
                 long oldDistance = systemState.distance;
@@ -633,6 +647,9 @@ void loop() {
 
         lastEncoderUpdate = currentTime;
     }
+
+    // v1.6.0: Automatyczny zapis logów na SD Card
+    sdCard.update();
 
     // Sprawdzanie przycisków
     checkPatternButtons();

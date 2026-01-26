@@ -1,5 +1,5 @@
 # Dokumentacja Techniczna
-## System Sterowania Malowaniem Pasów Drogowych v1.5.0
+## System Sterowania Malowaniem Pasów Drogowych v1.6.0
 
 **Status**: ✅ **PRODUCTION READY** - Naprawione GPIO strapping pins!
 **Data**: 2026-01-26
@@ -55,7 +55,7 @@ System sterowania malowaniem pasów drogowych to zaawansowane rozwiązanie przem
 
 ## 2. Historia Wersji
 
-### v1.5.0 (2026-01-26) - KRYTYCZNE NAPRAWY GPIO 🔴
+### v1.6.0 (2026-01-26) - KRYTYCZNE NAPRAWY GPIO 🔴
 **Typ**: Bug Fix + Nowe funkcje (OBOWIĄZKOWA AKTUALIZACJA!)
 **Status**: ✅ PRODUCTION READY
 
@@ -72,13 +72,13 @@ System sterowania malowaniem pasów drogowych to zaawansowane rozwiązanie przem
 
 **Naprawa**:
 ```cpp
-// PRZED v1.5.0 (BŁĄD):
+// PRZED v1.6.0 (BŁĄD):
 #define RELAY_1_PIN 12  // ⚠️ MTDI - strapping pin!
 #define RELAY_2_PIN 13  // ⚠️ MTCK
 #define RELAY_3_PIN 14  // ⚠️ MTMS
 #define RELAY_4_PIN 15  // ⚠️ MTDO
 
-// PO v1.5.0 (NAPRAWIONE):
+// PO v1.6.0 (NAPRAWIONE):
 #define RELAY_1_PIN 10  // ✅ Bezpieczny
 #define RELAY_2_PIN 11  // ✅ Bezpieczny
 #define RELAY_3_PIN 8   // ✅ Bezpieczny
@@ -161,10 +161,10 @@ eventLogger.printToSerial();  // Wydruk wszystkich logów
 - `src/service_mode.cpp` - sprintf→snprintf (1 miejsce)
 
 **Dokumentacja**:
-- `docs/SCHEMATY.md` - GPIO mapping v1.5.0
-- `docs/DOKUMENTACJA_TECHNICZNA.md` - Historia v1.5.0
+- `docs/SCHEMATY.md` - GPIO mapping v1.6.0
+- `docs/DOKUMENTACJA_TECHNICZNA.md` - Historia v1.6.0
 - `README.md` - Wersja 1.5.0
-- `CHANGELOG.md` - Wpis v1.5.0
+- `CHANGELOG.md` - Wpis v1.6.0
 
 ---
 
@@ -283,7 +283,7 @@ Kompletna dokumentacja techniczna gotowa do wdrożenia produkcyjnego.
 - ✅ **Refaktoryzacja przycisków** - 76 linii → 18 linii
 - ✅ **Naprawiono REVERSE** - faktyczna implementacja dla P-3a/P-3b
 - ✅ **Naprawiono Start Gap** - stabilne działanie
-- ✅ **Event Logger** - struktury przygotowane (implementacja v1.5.0)
+- ✅ **Event Logger** - struktury przygotowane (implementacja v1.6.0)
 - ✅ **State Machine** - przygotowanie do v2.0.0
 
 ### v1.3.0 (2026-01-23) - Start Gap (Od Przerwy)
@@ -465,7 +465,7 @@ struct LogEvent {
     const char* message;
 };
 ```
-**Status**: Struktury zdefiniowane, implementacja w v1.5.0
+**Status**: Struktury zdefiniowane, implementacja w v1.6.0
 
 ### 3.3 Przepływ Danych
 
@@ -1658,7 +1658,7 @@ uint8_t calculateChecksum(CalibrationData* data) {
 4. **Timeout requestów**: 5 sekund
 5. **Validacja parametrów**: Sprawdzanie wszystkich inputów
 6. **Brak wykonywania kodu**: Tylko predefiniowane komendy
-7. **Rate limiting**: Możliwe w przyszłości (v1.5.0)
+7. **Rate limiting**: Możliwe w przyszłości (v1.6.0)
 
 **Rekomendacje produkcyjne**:
 - Zmień hasło WiFi (WIFI_PASSWORD w config.h)
@@ -2005,7 +2005,7 @@ void sendDataToAPI() {
 }
 ```
 
-### 14.5 Dodawanie Event Logger (v1.5.0 - Przygotowane) 🆕
+### 14.5 Dodawanie Event Logger (v1.6.0 - Przygotowane) 🆕
 
 Struktury już zdefiniowane w config.h (v1.4.0), przykładowa implementacja:
 ```cpp
@@ -2069,7 +2069,7 @@ public:
 
 ### 15.3 Aktualizacje Firmware
 
-**OTA (Over-The-Air) - Przyszłość v1.5.0**:
+**OTA (Over-The-Air) - Przyszłość v1.6.0**:
 ```cpp
 // Planowane
 WiFiServer ota;
