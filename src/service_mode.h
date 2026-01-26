@@ -1,6 +1,6 @@
 /**
  * Tryb serwisowy - czyszczenie pistoletów malarskich
- * v1.4.1
+ * v1.4.2 - Naprawiono static variables (przenoszone do członków klasy)
  *
  * FUNKCJONALNOŚĆ:
  * - Wizualizacja 6 pistoletów (kwadraty na ekranie)
@@ -28,6 +28,9 @@ private:
     PatternType currentPattern;
     bool gunsActive;
     unsigned long activationTime;
+
+    // NOWE v1.4.2: State variables dla hold-to-fire (były static w update())
+    bool wasPressed;
 
     // Wizualizacja pistoletów
     void drawGuns();

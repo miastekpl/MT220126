@@ -1,6 +1,6 @@
 /**
  * Implementacja trybu serwisowego
- * v1.4.1
+ * v1.4.2 - Naprawiono static variables
  */
 
 #include "service_mode.h"
@@ -12,6 +12,7 @@ ServiceMode::ServiceMode(DisplayManager* disp, RelayController* rel) {
     currentPattern = PATTERN_P1A;
     gunsActive = false;
     activationTime = 0;
+    wasPressed = false;  // NOWE v1.4.2
 }
 
 void ServiceMode::init() {
@@ -65,6 +66,7 @@ void ServiceMode::show() {
 void ServiceMode::hide() {
     serviceActive = false;
     gunsActive = false;
+    wasPressed = false;  // NOWE v1.4.2: Reset state variables
     deactivateAllGuns();
     display->forceRedraw();
     DEBUG_PRINTLN("ServiceMode: Ukryty");
@@ -243,7 +245,7 @@ void ServiceMode::update() {
     }
 
     // Obsługa przycisku START/PAUZA - HOLD TO FIRE
-    static bool wasPressed = false;
+    // NAPRAWA v1.4.2: Używamy zmiennej członkowskiej zamiast static
     bool isPressed = (digitalRead(BTN_START_PIN) == LOW);
 
     if (isPressed && !wasPressed) {
@@ -259,23 +261,7 @@ void ServiceMode::update() {
 
     wasPressed = isPressed;
 
-    // Obsługa przycisku STOP (długie przytrzymanie = wyjście)
-    static unsigned long stopPressTime = 0;
-    static bool stopPressed = false;
-
-    if (digitalRead(BTN_STOP_PIN) == LOW) {
-        if (!stopPressed) {
-            stopPressed = true;
-            stopPressTime = millis();
-        }
-
-        // 2 sekundy przytrzymania = wyjście
-        if (millis() - stopPressTime > 2000) {
-            DEBUG_PRINTLN("ServiceMode: STOP (long press) - wyjscie");
-            hide();
-            stopPressed = false;
-        }
-    } else {
-        stopPressed = false;
-    }
+    // USUNIĘTE v1.4.2: Duplikacja obsługi STOP
+    // Wyjście z serwisu jest obsługiwane w main.cpp (linie 655-673)
+    // Ta duplikacja powodowała konflikt static variables i nieprzewidywalne zachowanie
 }

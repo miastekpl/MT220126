@@ -1,8 +1,12 @@
 /**
  * Implementacja obsługi enkodera
+ * v1.4.2 - Dodano thread-safety (mutex locks)
  */
 
 #include "encoder_handler.h"
+
+// NOWE v1.4.2: Deklaracja zewnętrznego mutexu
+extern SemaphoreHandle_t encoderMutex;
 
 EncoderHandler::EncoderHandler(uint8_t clk, uint8_t dt, uint8_t sw) {
     clkPin = clk;
@@ -29,43 +33,98 @@ void EncoderHandler::init() {
 }
 
 void EncoderHandler::update() {
-    aState = digitalRead(clkPin);
+    // NOWE v1.4.2: Thread-safe dostęp do position i distance
+    if (encoderMutex != NULL && xSemaphoreTake(encoderMutex, portMAX_DELAY) == pdTRUE) {
+        aState = digitalRead(clkPin);
 
-    if (aState != aLastState) {
-        // Zmiana stanu CLK
-        if (digitalRead(dtPin) != aState) {
-            position++;
-        } else {
-            position--;
+        if (aState != aLastState) {
+            // Zmiana stanu CLK
+            if (digitalRead(dtPin) != aState) {
+                position++;
+            } else {
+                position--;
+            }
+
+            // Przeliczanie na dystans
+            if (calibrated && pulsesPerCm > 0) {
+                distance = (long)(position / pulsesPerCm);
+            }
+
+            aLastState = aState;
         }
 
-        // Przeliczanie na dystans
-        if (calibrated && pulsesPerCm > 0) {
-            distance = (long)(position / pulsesPerCm);
+        xSemaphoreGive(encoderMutex);
+    } else {
+        // Fallback bez mutexu (na wypadek gdyby mutex nie był zainicjalizowany)
+        aState = digitalRead(clkPin);
+        if (aState != aLastState) {
+            if (digitalRead(dtPin) != aState) {
+                position++;
+            } else {
+                position--;
+            }
+            if (calibrated && pulsesPerCm > 0) {
+                distance = (long)(position / pulsesPerCm);
+            }
+            aLastState = aState;
         }
-
-        aLastState = aState;
     }
 }
 
 void EncoderHandler::reset() {
-    position = 0;
-    distance = 0;
-    lastPosition = 0;
-    lastUpdateTime = millis();
+    // NOWE v1.4.2: Thread-safe reset
+    if (encoderMutex != NULL && xSemaphoreTake(encoderMutex, portMAX_DELAY) == pdTRUE) {
+        position = 0;
+        distance = 0;
+        lastPosition = 0;
+        lastUpdateTime = millis();
+        xSemaphoreGive(encoderMutex);
+    } else {
+        // Fallback bez mutexu
+        position = 0;
+        distance = 0;
+        lastPosition = 0;
+        lastUpdateTime = millis();
+    }
 }
 
 void EncoderHandler::resetDistance() {
-    distance = 0;
-    position = 0;
+    // NOWE v1.4.2: Thread-safe reset distance
+    if (encoderMutex != NULL && xSemaphoreTake(encoderMutex, portMAX_DELAY) == pdTRUE) {
+        distance = 0;
+        position = 0;
+        xSemaphoreGive(encoderMutex);
+    } else {
+        // Fallback bez mutexu
+        distance = 0;
+        position = 0;
+    }
 }
 
 long EncoderHandler::getDistance() {
-    return distance;
+    // NOWE v1.4.2: Thread-safe odczyt distance
+    long result = 0;
+    if (encoderMutex != NULL && xSemaphoreTake(encoderMutex, portMAX_DELAY) == pdTRUE) {
+        result = distance;
+        xSemaphoreGive(encoderMutex);
+    } else {
+        // Fallback bez mutexu
+        result = distance;
+    }
+    return result;
 }
 
 long EncoderHandler::getPosition() {
-    return position;
+    // NOWE v1.4.2: Thread-safe odczyt position
+    long result = 0;
+    if (encoderMutex != NULL && xSemaphoreTake(encoderMutex, portMAX_DELAY) == pdTRUE) {
+        result = position;
+        xSemaphoreGive(encoderMutex);
+    } else {
+        // Fallback bez mutexu
+        result = position;
+    }
+    return result;
 }
 
 float EncoderHandler::getSpeed() {

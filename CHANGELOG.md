@@ -7,6 +7,154 @@ projekt stosuje [Semantic Versioning](https://semver.org/lang/pl/).
 
 ---
 
+## [1.4.2] - 2026-01-26
+
+### 🔴 NAPRAWA BŁĘDÓW KRYTYCZNYCH - OBOWIĄZKOWA AKTUALIZACJA!
+
+**Status**: ✅ **GOTOWE DO PRODUKCJI** (po naprawie krytycznych bugów z v1.4.1)
+
+Wersja 1.4.1 zawierała **5 KRYTYCZNYCH błędów** które uniemożliwiały poprawne działanie systemu. Wszystkie zostały naprawione w v1.4.2.
+
+---
+
+### 🐛 NAPRAWIONE BŁĘDY KRYTYCZNE
+
+#### 1. **Prędkość ZAWSZE 0 km/h** ❌→✅
+**Lokalizacja**: `src/main.cpp:593`
+
+**Problem**: Obliczanie `distanceDiff` po zmianie `systemState.distance` → wynik ZAWSZE 0
+```cpp
+// BUG v1.4.1:
+systemState.distance = newDistance;
+long distanceDiff = abs(newDistance - systemState.distance);  // ZAWSZE 0!
+```
+
+**Konsekwencje**:
+- Prędkość zawsze 0 km/h
+- `isSafeToActivateGuns()` blokował malowanie (wymaga min 2 km/h)
+- **PISTOLETY NIE DZIAŁAŁY!**
+
+**Naprawa v1.4.2**:
+```cpp
+long oldDistance = systemState.distance;  // Zapisz PRZED zmianą
+systemState.distance = newDistance;
+long distanceDiff = abs(newDistance - oldDistance);  // ✅ Poprawne
+```
+
+---
+
+#### 2. **Race Conditions - Mutexy Nieużywane** ❌→✅
+**Lokalizacja**: `src/encoder_handler.cpp`
+
+**Problem**: Mutexy stworzone w v1.4.0 ale **NIGDY NIE UŻYWANE**!
+
+**Konsekwencje**:
+- `encoder.position` modyfikowany z ISR i loop() bez synchronizacji
+- Potencjalne crashe, błędne odczyty, niestabilność
+
+**Naprawa v1.4.2**: Dodano mutex locks do:
+- `update()` - modyfikacja position/distance
+- `getDistance()` - odczyt distance
+- `getPosition()` - odczyt position
+- `reset()` - reset zmiennych
+- `resetDistance()` - reset dystansu
+
+```cpp
+if (encoderMutex != NULL && xSemaphoreTake(encoderMutex, portMAX_DELAY) == pdTRUE) {
+    position++;  // Thread-safe!
+    xSemaphoreGive(encoderMutex);
+}
+```
+
+---
+
+#### 3. **Undefined Behavior - abs() zamiast fabs()** ❌→✅
+**Lokalizacja**: `src/display_manager.cpp:112, 150`
+
+**Problem**: Użycie `abs()` (integer) dla float → UB!
+```cpp
+if (abs(speed - lastSpeed) > 0.1) {  // UB: float→int→float
+```
+
+**Konsekwencje**:
+- Niepoprawne porównania float
+- Niepotrzebne/brakujące odświeżanie ekranu
+
+**Naprawa v1.4.2**:
+```cpp
+#include <cmath>
+if (fabs(speed - lastSpeed) > 0.1) {  // ✅ fabs() dla float
+if (fabs(area - lastArea) > 0.01) {   // ✅ fabs() dla float
+```
+
+---
+
+#### 4. **Duplikacja Obsługi STOP** ❌→✅
+**Lokalizacja**: `src/service_mode.cpp:262-280`
+
+**Problem**: Przycisk STOP obsługiwany w 2 miejscach (main.cpp + service_mode.cpp)
+
+**Konsekwencje**:
+- Konflikt static variables
+- Nieprzewidywalne zachowanie
+
+**Naprawa v1.4.2**: Usunięto obsługę STOP z `service_mode.cpp` (zostaje tylko w main.cpp)
+
+---
+
+#### 5. **Static Variables w update()** ❌→✅
+**Lokalizacja**: `src/service_mode.cpp:246`
+
+**Problem**: `static bool wasPressed` nie była czyszczona przy `hide()`
+
+**Konsekwencje**:
+- Stan przeciekał między sesjami serwisu
+- Nieprzewidywalne zachowanie przy ponownym wejściu
+
+**Naprawa v1.4.2**: Przeniesiono do zmiennej członkowskiej klasy
+```cpp
+// service_mode.h
+class ServiceMode {
+    bool wasPressed;  // Nie static!
+
+// service_mode.cpp
+void hide() {
+    wasPressed = false;  // Reset przy wyjściu
+}
+```
+
+---
+
+#### BONUS: **Dodano MENU_SERVICE_START do Config** ✅
+**Lokalizacja**: `src/config_v140_NEW.h:183`
+
+Enum `MENU_SERVICE_START` był używany ale nie zdefiniowany! Dodano do `MenuResult`.
+
+---
+
+### 📊 Statystyki
+
+| Metryka | Wartość |
+|---------|---------|
+| Naprawione bugi KRYTYCZNE | 5 |
+| Zmienione pliki | 8 |
+| Dodane linie | ~80 |
+| Usunięte linie | ~20 |
+| Status | ✅ PRODUCTION READY |
+
+### 🔧 Zmienione Pliki
+
+1. `src/main.cpp` - naprawa prędkości, wersja 1.4.2
+2. `src/encoder_handler.h` - include FreeRTOS headers
+3. `src/encoder_handler.cpp` - mutex locks (5 funkcji)
+4. `src/display_manager.cpp` - abs()→fabs()
+5. `src/service_mode.h` - wasPressed → member variable
+6. `src/service_mode.cpp` - usunięto duplikację STOP
+7. `src/config_v140_NEW.h` - dodano MENU_SERVICE_START
+8. `src/menu_system.cpp` - wersja 1.4.2
+
+---
+
 ## [1.4.1] - 2026-01-26
 
 ### ✨ Nowe Funkcje

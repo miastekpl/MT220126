@@ -139,7 +139,7 @@ void MenuSystem::handleSelection() {
                 tft->setCursor(10, 50);
                 tft->println("System Malowania Pasow Drogowych");
                 tft->setCursor(10, 70);
-                tft->println("Wersja: 1.4.1");
+                tft->println("Wersja: 1.4.2");
                 tft->setCursor(10, 90);
                 tft->println("Platforma: ESP32-S3 N16R8");
                 tft->setCursor(10, 110);

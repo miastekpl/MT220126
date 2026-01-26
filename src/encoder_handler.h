@@ -1,6 +1,7 @@
 /**
  * Obsługa enkodera KY-040
  * Pomiar odległości i prędkości
+ * v1.4.2 - Dodano thread-safety (mutex locks)
  */
 
 #ifndef ENCODER_HANDLER_H
@@ -8,6 +9,8 @@
 
 #include <Arduino.h>
 #include "config.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 
 class EncoderHandler {
 private:

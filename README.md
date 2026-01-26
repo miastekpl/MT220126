@@ -1,20 +1,33 @@
-# System Sterowania Malowaniem Pasów Drogowych v1.4.0
+# System Sterowania Malowaniem Pasów Drogowych v1.4.2
 
 ## 📋 Opis Projektu
 
 Profesjonalny system sterowania malowaniem pasów drogowych wykorzystujący ESP32-S3 z obsługą 6 pistoletów malarskich sterowanych przekaźnikami. System umożliwia automatyczne malowanie zgodnie z normami drogowymi.
 
-## 🚨 CO NOWEGO W v1.4.0 - OBOWIĄZKOWA AKTUALIZACJA!
+## 🚨 CO NOWEGO W v1.4.2 - NAPRAWA BŁĘDÓW KRYTYCZNYCH!
 
+**Status**: ✅ **GOTOWE DO PRODUKCJI**
+
+**OBOWIĄZKOWA AKTUALIZACJA** z v1.4.1 (która zawierała krytyczne bugi)!
+
+### Naprawione błędy KRYTYCZNE:
+1. 🐛 **Prędkość zawsze 0 km/h** - naprawiono obliczenia → pistolety DZIAŁAJĄ!
+2. 🔒 **Race conditions** - dodano faktyczne użycie mutexów (thread-safety)
+3. 🧮 **Undefined behavior** - abs()→fabs() dla float
+4. 🔁 **Duplikacja obsługi STOP** - usunięto konflikt
+5. 💾 **Static variables** - przeniesiono do member variables
+
+### Nowe funkcje (z v1.4.1):
+- 🧹 **Tryb Serwisowy** - czyszczenie pistoletów (hold-to-fire)
+- 📊 **Wizualizacja pistoletów** - 6 kwadratów na ekranie
+
+### Z v1.4.0:
 - 🔴 **NAPRAWIONO 16 KONFLIKTÓW GPIO** - kompletnie przeprojektowane piny
 - ⚡ **5-10x SZYBSZE obliczenia** malowania (integer math)
 - ✅ **REVERSE działa poprawnie** - faktyczna zamiana pistoletów P-3a/P-3b
-- 🔒 **Thread-safe** - dodano FreeRTOS mutex
-- 🌐 **WiFi Access Point** - zdalne sterowanie przez przeglądarkę
-- 🐛 **Naprawiono bug Start Gap** - stabilne działanie
-- 📱 **Responsywny dashboard** - status w czasie rzeczywistym
+- 🔒 **Thread-safe** - FreeRTOS mutex (faktycznie używane od v1.4.2!)
 
-**UWAGA**: Wersja 1.4.0 zmienia większość pinów GPIO! Wymaga fizycznej zmiany połączeń.
+**UWAGA**: Wersja 1.4.0+ zmienia większość pinów GPIO! Wymaga fizycznej zmiany połączeń.
 
 ## 🎯 Funkcjonalności
 
@@ -132,9 +145,11 @@ Profesjonalny system sterowania malowaniem pasów drogowych wykorzystujący ESP3
 
 ## 📝 Wersja
 
-**Aktualna wersja: 1.4.0** (2026-01-23)
+**Aktualna wersja: 1.4.2** (2026-01-26)
 
-**BREAKING CHANGES**: v1.4.0 wymaga przeł ączenia fizycznych połączeń GPIO!
+**NAPRAWIONO BŁĘDY KRYTYCZNE**: v1.4.2 naprawia 5 krytycznych bugów z v1.4.1!
+
+**BREAKING CHANGES**: v1.4.0+ wymaga przeł ączenia fizycznych połączeń GPIO!
 
 Zobacz [CHANGELOG.md](CHANGELOG.md) aby poznać historię zmian.
 

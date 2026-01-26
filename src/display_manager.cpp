@@ -1,8 +1,10 @@
 /**
  * Implementacja menedżera wyświetlacza
+ * v1.4.2 - Naprawiono użycie abs() → fabs() dla float
  */
 
 #include "display_manager.h"
+#include <cmath>  // NOWE v1.4.2: dla fabs()
 
 DisplayManager::DisplayManager(TFT_eSPI* tftDisplay) {
     tft = tftDisplay;
@@ -109,7 +111,7 @@ void DisplayManager::drawSpeedBox(float speed) {
     const int16_t w = 170;
     const int16_t h = 100;
 
-    if (needsFullRedraw || abs(speed - lastSpeed) > 0.1) {
+    if (needsFullRedraw || fabs(speed - lastSpeed) > 0.1) {  // NAPRAWA v1.4.2: fabs() dla float
         // Ramka
         tft->drawRect(x, y, w, h, COLOR_HEADER);
         tft->drawRect(x+1, y+1, w-2, h-2, COLOR_HEADER);
@@ -147,7 +149,7 @@ void DisplayManager::drawAreaBox(float area) {
     const int16_t w = 310;
     const int16_t h = 90;
 
-    if (needsFullRedraw || abs(area - lastArea) > 0.01) {
+    if (needsFullRedraw || fabs(area - lastArea) > 0.01) {  // NAPRAWA v1.4.2: fabs() dla float
         // Ramka
         tft->drawRect(x, y, w, h, COLOR_HEADER);
         tft->drawRect(x+1, y+1, w-2, h-2, COLOR_HEADER);

@@ -37,7 +37,7 @@
 #include "service_mode.h"  // NOWE v1.4.1: Tryb serwisowy
 
 // Wersja oprogramowania
-const char* SOFTWARE_VERSION = "1.4.1";  // ZMIANA v1.4.1: Dodano tryb serwisowy
+const char* SOFTWARE_VERSION = "1.4.2";  // ZMIANA v1.4.2: STABILIZACJA - naprawa błędów krytycznych
 const char* BUILD_DATE = __DATE__;
 const char* BUILD_TIME = __TIME__;
 
@@ -586,11 +586,13 @@ void loop() {
         if (systemState.state == STATE_PAINTING || systemState.state == STATE_MEASURING) {
             long newDistance = encoder.getDistance();
             if (newDistance != systemState.distance) {
+                // NAPRAWA v1.4.2: Zapisz stary dystans PRZED zmianą
+                long oldDistance = systemState.distance;
                 systemState.distance = newDistance;
 
                 // Obliczanie prędkości (km/h)
                 float timeDiff = (currentTime - lastEncoderUpdate) / 1000.0;
-                long distanceDiff = abs(newDistance - systemState.distance);
+                long distanceDiff = abs(newDistance - oldDistance);  // ✅ NAPRAWIONE: używamy oldDistance
                 float distanceDiffM = distanceDiff / 100.0;
                 if (timeDiff > 0) {
                     systemState.speed = (distanceDiffM / timeDiff) * 3.6; // m/s → km/h
