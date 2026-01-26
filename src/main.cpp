@@ -34,9 +34,10 @@
 #include "relay_controller.h"
 #include "menu_system.h"
 #include "calibration.h"
+#include "service_mode.h"  // NOWE v1.4.1: Tryb serwisowy
 
 // Wersja oprogramowania
-const char* SOFTWARE_VERSION = "1.4.0";  // ZMIANA v1.4.0: Nowa wersja
+const char* SOFTWARE_VERSION = "1.4.1";  // ZMIANA v1.4.1: Dodano tryb serwisowy
 const char* BUILD_DATE = __DATE__;
 const char* BUILD_TIME = __TIME__;
 
@@ -52,6 +53,7 @@ EncoderHandler encoder(ENCODER_CLK_PIN, ENCODER_DT_PIN, SELECTOR_PIN);  // ZMIEN
 RelayController relays;
 MenuSystem menu(&display, &encoder);
 CalibrationManager calibration(&encoder);
+ServiceMode serviceMode(&display, &relays);  // NOWE v1.4.1: Tryb serwisowy
 
 // Zmienne stanu systemu
 SystemState systemState;
@@ -521,6 +523,10 @@ void setup() {
     Serial.println("Inicjalizacja kalibracji...");
     calibration.init();
 
+    // NOWE v1.4.1: Inicjalizacja trybu serwisowego
+    Serial.println("Inicjalizacja trybu serwisowego...");
+    serviceMode.init();
+
     // Sprawdzenie kalibracji
     if (!calibration.isCalibrated()) {
         Serial.println("UWAGA: System wymaga kalibracji!");
@@ -613,6 +619,11 @@ void loop() {
             systemState.state = STATE_MEASURING;
             systemState.distance = 0;
             encoder.resetDistance();
+        } else if (result == MENU_SERVICE_START) {
+            // NOWE v1.4.1: Wejście do trybu serwisowego
+            systemState.state = STATE_SERVICE;
+            serviceMode.show();
+            DEBUG_PRINTLN("Wejscie do trybu serwisowego");
         }
     }
 
@@ -627,6 +638,38 @@ void loop() {
         } else if (result == CALIBRATION_CANCELLED) {
             systemState.state = STATE_IDLE;
             updateDisplay();
+        }
+    }
+
+    // NOWE v1.4.1: Obsługa trybu serwisowego
+    if (systemState.state == STATE_SERVICE) {
+        serviceMode.update();
+
+        // Sprawdzanie przycisków wzorców (umożliwia zmianę wzorca w trybie serwisowym)
+        checkPatternButtons();
+        if (systemState.patternChanged) {
+            serviceMode.setPattern(systemState.currentPattern);
+            systemState.patternChanged = false;
+        }
+
+        // Sprawdzenie długiego przyciśnięcia STOP (2s) - wyjście z serwisu
+        static unsigned long stopPressTime = 0;
+        static bool stopPressed = false;
+
+        if (digitalRead(BTN_STOP_PIN) == LOW) {
+            if (!stopPressed) {
+                stopPressed = true;
+                stopPressTime = millis();
+            } else if (millis() - stopPressTime >= 2000) {
+                // Długie przyciśnięcie - wyjście z serwisu
+                systemState.state = STATE_IDLE;
+                serviceMode.hide();
+                updateDisplay();
+                DEBUG_PRINTLN("Wyjscie z trybu serwisowego");
+                stopPressed = false;
+            }
+        } else {
+            stopPressed = false;
         }
     }
 

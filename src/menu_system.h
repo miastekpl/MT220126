@@ -15,6 +15,7 @@ enum MenuItem {
     MENU_ITEM_MEASURE_DISTANCE,
     MENU_ITEM_RESET_COUNTER,
     MENU_ITEM_SYSTEM_INFO,
+    MENU_ITEM_SERVICE,      // NOWE v1.4.1 - tryb serwisowy (czyszczenie pistoletów)
     MENU_ITEM_EXIT,
     MENU_ITEM_COUNT
 };

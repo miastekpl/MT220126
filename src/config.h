@@ -162,7 +162,7 @@ enum PatternType {
     PATTERN_COUNT
 };
 
-// Stany systemu - ROZSZERZONE (dodano ERROR)
+// Stany systemu - ROZSZERZONE (dodano ERROR, SERVICE)
 enum SystemStateType {
     STATE_IDLE = 0,
     STATE_PAINTING,
@@ -170,7 +170,8 @@ enum SystemStateType {
     STATE_MENU,
     STATE_CALIBRATING,
     STATE_MEASURING,
-    STATE_ERROR         // NOWE v1.4.0 - stan błędu
+    STATE_ERROR,        // NOWE v1.4.0 - stan błędu
+    STATE_SERVICE       // NOWE v1.4.1 - tryb serwisowy (czyszczenie pistoletów)
 };
 
 // Wyniki menu
@@ -178,7 +179,8 @@ enum MenuResult {
     MENU_NONE = 0,
     MENU_EXIT,
     MENU_CALIBRATION_START,
-    MENU_MEASURE_START
+    MENU_MEASURE_START,
+    MENU_SERVICE_START      // NOWE v1.4.1 - start trybu serwisowego
 };
 
 // Wyniki kalibracji

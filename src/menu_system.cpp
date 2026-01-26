@@ -9,6 +9,7 @@ const char* MENU_ITEMS_TEXT[MENU_ITEM_COUNT] = {
     "Pomiar dystansu",
     "Zeruj liczniki",
     "Informacje",
+    "Serwis",        // NOWE v1.4.1 - czyszczenie pistoletów
     "Wyjscie"
 };
 
@@ -138,7 +139,7 @@ void MenuSystem::handleSelection() {
                 tft->setCursor(10, 50);
                 tft->println("System Malowania Pasow Drogowych");
                 tft->setCursor(10, 70);
-                tft->println("Wersja: 1.0.0");
+                tft->println("Wersja: 1.4.1");
                 tft->setCursor(10, 90);
                 tft->println("Platforma: ESP32-S3 N16R8");
                 tft->setCursor(10, 110);
@@ -151,6 +152,12 @@ void MenuSystem::handleSelection() {
                 tft->println("Nacisnij joystick aby wrocic");
             }
             inSubMenu = true;
+            break;
+
+        case MENU_ITEM_SERVICE:
+            DEBUG_PRINTLN("Menu: Wybrano serwis (czyszczenie pistoletow)");
+            // Serwis będzie obsługiwany w głównym programie
+            hide();
             break;
 
         case MENU_ITEM_EXIT:
@@ -206,6 +213,8 @@ MenuResult MenuSystem::update() {
                     return MENU_CALIBRATION_START;
                 } else if (selectedItem == MENU_ITEM_MEASURE_DISTANCE) {
                     return MENU_MEASURE_START;
+                } else if (selectedItem == MENU_ITEM_SERVICE) {
+                    return MENU_SERVICE_START;  // NOWE v1.4.1
                 } else if (selectedItem == MENU_ITEM_EXIT) {
                     return MENU_EXIT;
                 }

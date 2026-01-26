@@ -7,6 +7,76 @@ projekt stosuje [Semantic Versioning](https://semver.org/lang/pl/).
 
 ---
 
+## [1.4.1] - 2026-01-26
+
+### ✨ Nowe Funkcje
+
+#### Tryb Serwisowy (Service Mode)
+**Funkcja**: Czyszczenie i testowanie pistoletów malarskich
+
+**Dlaczego to ważne?**
+- JEDYNY moment, gdy pistolety mogą być uruchomione na postoju maszyny
+- Zalecane przed każdym malowaniem
+- Zalecane przynajmniej raz w tygodniu gdy maszyna nie jest używana
+
+**Jak to działa?**
+1. Wejdź do Menu → wybierz "Serwis"
+2. Wybierz wzorzec malowania (przyciski P-1a do P-7d)
+3. **TRZYMAJ** przycisk START/PAUZA → pistolety ON
+4. **PUŚĆ** przycisk START/PAUZA → pistolety OFF
+5. STOP (trzymaj 2s) → wyjście z trybu serwisowego
+
+**Wizualizacja**:
+- Ekran pokazuje 6 kwadratów reprezentujących pistolety (P1-P6)
+- **Zielony** = pistolet aktywnie maluje (FIRE)
+- **Żółty** = pistolet włączony dla wzorca ale nieaktywny
+- **Szary** = pistolet wyłączony dla wybranego wzorca
+
+**Układ pistoletów**:
+```
+[P1] [P2] [P3]  ← Góra (pistolety osiowe 12cm)
+[P4] [P5] [P6]  ← Dół (P4=oś 24cm, P5/P6=brzeg)
+```
+
+**Bezpieczeństwo**:
+- Hold-to-fire: pistolety działają TYLKO gdy przycisk jest wciśnięty
+- Automatyczne wyłączenie przy puszczeniu przycisku
+- Wyjście z trybu: długie STOP (2s)
+
+### 🔧 Zmiany Techniczne
+
+**Nowe pliki**:
+- `src/service_mode.h` - interfejs modułu serwisowego
+- `src/service_mode.cpp` - implementacja trybu serwisowego
+
+**Zmodyfikowane pliki**:
+- `src/config.h`: Dodano `STATE_SERVICE`, `MENU_SERVICE_START`
+- `src/menu_system.h`: Dodano `MENU_ITEM_SERVICE`
+- `src/menu_system.cpp`: Menu "Serwis" + wersja 1.4.1
+- `src/main.cpp`: Integracja trybu serwisowego + wersja 1.4.1
+
+**API**:
+```cpp
+class ServiceMode {
+    void init();                           // Inicjalizacja
+    void show();                           // Wyświetl ekran serwisu
+    void hide();                           // Ukryj ekran serwisu
+    void update();                         // Obsługa hold-to-fire
+    void setPattern(PatternType pattern);  // Zmień wzorzec
+    PatternType getPattern();              // Pobierz aktualny wzorzec
+};
+```
+
+### 📊 Statystyki
+
+- **Nowe linie kodu**: ~350
+- **Nowe pliki**: 2 (service_mode.h/.cpp)
+- **Zmodyfikowane pliki**: 5
+- **Nowe stany systemu**: 1 (STATE_SERVICE)
+- **Nowe pozycje menu**: 1 (Serwis)
+
+---
+
 ## [1.4.0] - 2026-01-23
 
 ### 🚀 KOMPLEKSOWA REFAKTORYZACJA - Produkcja Ready
