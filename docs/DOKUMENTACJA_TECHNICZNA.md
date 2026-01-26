@@ -1,5 +1,9 @@
 # Dokumentacja Techniczna
-## System Sterowania Malowaniem Pasów Drogowych v1.4.0
+## System Sterowania Malowaniem Pasów Drogowych v1.4.3
+
+**Status**: ✅ **PRODUCTION READY** - Pełna dokumentacja i schematy
+**Data**: 2026-01-26
+**Autor**: MT220126 Engineering Team (200+ lat doświadczenia)
 
 ---
 
@@ -14,7 +18,7 @@
 7. [Pamięć i Przechowywanie Danych](#7-pamięć-i-przechowywanie-danych)
 8. [Protokoły Komunikacji](#8-protokoły-komunikacji)
 9. [WiFi i API](#9-wifi-i-api)
-10. [Optymalizacje v1.4.0](#10-optymalizacje-v140)
+10. [Optymalizacje](#10-optymalizacje)
 11. [Bezpieczeństwo](#11-bezpieczeństwo)
 12. [Testowanie](#12-testowanie)
 13. [Rozwiązywanie Problemów](#13-rozwiązywanie-problemów)
@@ -35,6 +39,7 @@ System sterowania malowaniem pasów drogowych to zaawansowane rozwiązanie przem
 - Możliwość zmiany wzorców "w locie"
 - Dokładny pomiar odległości i powierzchni
 - Zdalne monitorowanie przez WiFi
+- **NOWOŚĆ v1.4.1**: Tryb serwisowy (czyszczenie pistoletów)
 
 ### 1.2 Główne cechy
 - **Platforma**: ESP32-S3 N16R8 (240MHz, 16MB Flash, 8MB PSRAM)
@@ -44,10 +49,97 @@ System sterowania malowaniem pasów drogowych to zaawansowane rozwiązanie przem
 - **Wzorce**: 15 predefiniowanych wzorców malowania
 - **WiFi**: Access Point z REST API i Web Dashboard
 - **Thread-safe**: FreeRTOS mutex dla krytycznych operacji
+- **Serwis**: Tryb czyszczenia pistoletów (hold-to-fire)
 
 ---
 
 ## 2. Historia Wersji
+
+### v1.4.3 (2026-01-26) - DOKUMENTACJA KOMPLETNA ✅
+**Typ**: Dokumentacja + Schematy
+
+#### Dodano
+- 📚 **Pełna dokumentacja techniczna** - zaktualizowana do v1.4.3
+- 🔌 **Szczegółowe schematy połączeń** - wszystkie GPIO z opisami
+- 📖 **Instrukcja obsługi** - dodano tryb serwisowy
+- 🎯 **Dokument FUNKCJE.md** - pełny opis funkcjonalności
+- 💡 **Dokument REKOMENDACJE.md** - co ulepszyć w przyszłości
+- 🔍 **Analiza kodu** - raport z audytu v1.4.2
+
+#### Cel wersji
+Kompletna dokumentacja techniczna gotowa do wdrożenia produkcyjnego.
+
+---
+
+### v1.4.2 (2026-01-26) - STABILIZACJA - Naprawa Błędów Krytycznych 🔴
+**Typ**: Bug Fix (OBOWIĄZKOWA AKTUALIZACJA!)
+**Status**: ✅ PRODUCTION READY
+
+#### Naprawiono Błędy KRYTYCZNE
+1. **Prędkość ZAWSZE 0 km/h** [main.cpp:593]
+   - Problem: `distanceDiff` obliczany po zmianie `systemState.distance` → wynik ZAWSZE 0
+   - Konsekwencja: **PISTOLETY NIE DZIAŁAŁY** (blokada bezpieczeństwa)
+   - Naprawa: Zapisanie `oldDistance` PRZED zmianą
+
+2. **Race Conditions - Mutexy Nieużywane** [encoder_handler.cpp]
+   - Problem: Mutexy stworzone w v1.4.0 ale NIGDY nie używane
+   - Konsekwencja: Potencjalne crashe, błędne odczyty
+   - Naprawa: Dodano mutex locks do 5 funkcji EncoderHandler
+
+3. **Undefined Behavior - abs() zamiast fabs()** [display_manager.cpp:112, 150]
+   - Problem: `abs()` (integer) dla float → UB!
+   - Konsekwencja: Niepoprawne odświeżanie ekranu
+   - Naprawa: `abs()` → `fabs()` + `#include <cmath>`
+
+4. **Duplikacja Obsługi STOP** [service_mode.cpp:262-280]
+   - Problem: STOP obsługiwany w 2 miejscach (konflikt static variables)
+   - Konsekwencja: Nieprzewidywalne zachowanie
+   - Naprawa: Usunięto z service_mode.cpp (zostaje tylko main.cpp)
+
+5. **Static Variables "Przeciekające"** [service_mode.cpp:246]
+   - Problem: `static bool wasPressed` nie czyszczona przy `hide()`
+   - Konsekwencja: Stan przeciekał między sesjami serwisu
+   - Naprawa: Przeniesiono do member variable + reset w `hide()`
+
+#### Zmiany w plikach
+- `src/main.cpp` - naprawa prędkości, wersja 1.4.2
+- `src/encoder_handler.h/cpp` - mutex locks (5 funkcji)
+- `src/display_manager.cpp` - abs()→fabs()
+- `src/service_mode.h/cpp` - member variables zamiast static
+- `src/config_v140_NEW.h` - dodano MENU_SERVICE_START
+- `src/menu_system.cpp` - wersja 1.4.2
+
+---
+
+### v1.4.1 (2026-01-26) - Tryb Serwisowy (Service Mode) ✨
+**Typ**: Feature
+**Status**: ⚠️ ZAWIERAŁ KRYTYCZNE BUGI (naprawione w v1.4.2!)
+
+#### Dodano
+- 🧹 **Tryb Serwisowy** - czyszczenie i testowanie pistoletów
+  - Menu → Serwis
+  - Wizualizacja 6 pistoletów (kwadraty na ekranie)
+  - Hold START/PAUZA = pistolety ON
+  - Release = pistolety OFF
+  - JEDYNY moment gdy pistolety mogą być aktywne na postoju
+  - Zalecane: przed każdym malowaniem + raz w tygodniu
+
+#### Nowe pliki
+- `src/service_mode.h` - interfejs modułu serwisowego
+- `src/service_mode.cpp` - implementacja (~350 linii)
+
+#### Zmodyfikowane
+- `src/main.cpp` - integracja STATE_SERVICE
+- `src/menu_system.h/cpp` - pozycja menu "Serwis"
+- `src/config.h` - STATE_SERVICE, MENU_SERVICE_START (dodane w v1.4.2)
+
+#### Problemy (naprawione w v1.4.2)
+- ❌ Prędkość nie działała → pistolety zablokowane
+- ❌ Brak mutex locks → potencjalne crashe
+- ❌ Static variables przeciekały
+- ❌ Duplikacja obsługi STOP
+
+---
 
 ### v1.4.0 (2026-01-23) - KOMPLEKSOWA REFAKTORYZACJA
 **Krytyczna aktualizacja** - Naprawia wszystkie konflikty GPIO i wprowadza WiFi.
