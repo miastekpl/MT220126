@@ -35,9 +35,10 @@
 #include "menu_system.h"
 #include "calibration.h"
 #include "service_mode.h"  // NOWE v1.4.1: Tryb serwisowy
+#include "event_logger.h"  // NOWE v1.5.0: System logowania zdarzeń
 
 // Wersja oprogramowania
-const char* SOFTWARE_VERSION = "1.4.2";  // ZMIANA v1.4.2: STABILIZACJA - naprawa błędów krytycznych
+const char* SOFTWARE_VERSION = "1.5.0";  // ZMIANA v1.5.0: KRYTYCZNE NAPRAWY - GPIO pins, EventLogger, snprintf
 const char* BUILD_DATE = __DATE__;
 const char* BUILD_TIME = __TIME__;
 
@@ -54,6 +55,7 @@ RelayController relays;
 MenuSystem menu(&display, &encoder);
 CalibrationManager calibration(&encoder);
 ServiceMode serviceMode(&display, &relays);  // NOWE v1.4.1: Tryb serwisowy
+EventLogger eventLogger;  // NOWE v1.5.0: System logowania zdarzeń
 
 // Zmienne stanu systemu
 SystemState systemState;
@@ -91,6 +93,12 @@ bool isSafeToActivateGuns() {
     if (systemState.speed < MIN_SPEED_KMH) {
         DEBUG_PRINTF("BEZPIECZENSTWO: Predkosc za niska: %.2f km/h (min %.2f)\n",
                     systemState.speed, MIN_SPEED_KMH);
+        // v1.5.0: Loguj tylko co 5 sekund (nie spamuj logów)
+        static unsigned long lastSafetyLog = 0;
+        if (millis() - lastSafetyLog > 5000) {
+            eventLogger.log(EVENT_SAFETY_TRIGGERED, (uint16_t)(systemState.speed * 10), 1, "Blokada: predkosc za niska");
+            lastSafetyLog = millis();
+        }
         return false;
     }
 
@@ -102,7 +110,17 @@ bool isSafeToActivateGuns() {
         unsigned long timeSinceMovement = millis() - systemState.lastMovementTime;
         if (timeSinceMovement > MOVEMENT_TIMEOUT_MS) {
             DEBUG_PRINTLN("BEZPIECZENSTWO: Brak ruchu enkodera!");
+            // v1.5.0: Loguj tylko raz (unikaj spamu)
+            static bool movementLoggedOnce = false;
+            if (!movementLoggedOnce) {
+                eventLogger.log(EVENT_SAFETY_TRIGGERED, 0, 2, "Blokada: brak ruchu enkodera");
+                movementLoggedOnce = true;
+            }
             return false;
+        } else {
+            // Reset flag gdy ruch wykryty ponownie
+            static bool movementLoggedOnce = false;
+            movementLoggedOnce = false;
         }
     } else {
         // Wykryto ruch - aktualizuj timestamp
@@ -182,6 +200,9 @@ void checkPatternButtons() {
 void handlePatternChange(PatternType newPattern) {
     Pattern* pattern = getPattern(newPattern);
     if (!pattern) return;
+
+    // NOWE v1.5.0: Logowanie zmiany wzorca
+    eventLogger.log(EVENT_PATTERN_CHANGED, systemState.currentPattern, newPattern, pattern->name);
 
     // Zapisz dystans w momencie zmiany wzorca
     systemState.patternStartDistance = systemState.distance;
@@ -267,15 +288,18 @@ void checkControlButtons() {
                 systemState.lastMovementTime = millis();
                 systemState.lastDistance = systemState.distance;
                 DEBUG_PRINTLN("START MALOWANIA");
+                eventLogger.log(EVENT_STATE_CHANGED, STATE_IDLE, STATE_PAINTING, "START malowania");  // v1.5.0
                 lastStartRelease = millis();
             } else if (systemState.state == STATE_PAINTING) {
                 systemState.state = STATE_PAUSED;
                 DEBUG_PRINTLN("PAUZA");
+                eventLogger.log(EVENT_STATE_CHANGED, STATE_PAINTING, STATE_PAUSED, "PAUZA");  // v1.5.0
                 lastStartRelease = millis();
             } else if (systemState.state == STATE_PAUSED) {
                 systemState.state = STATE_PAINTING;
                 systemState.lastMovementTime = millis();
                 DEBUG_PRINTLN("WZNOWIENIE");
+                eventLogger.log(EVENT_STATE_CHANGED, STATE_PAUSED, STATE_PAINTING, "WZNOWIENIE");  // v1.5.0
                 lastStartRelease = millis();
             }
         }
@@ -294,6 +318,7 @@ void checkControlButtons() {
             menu.show();
             stopPressed = false;
             DEBUG_PRINTLN("WEJSCIE DO MENU");
+            eventLogger.log(EVENT_STATE_CHANGED, 0, STATE_MENU, "Wejscie do MENU");  // v1.5.0
         }
     } else {
         if (stopPressed && millis() - stopPressTime < 1000) {
@@ -301,6 +326,7 @@ void checkControlButtons() {
             systemState.state = STATE_IDLE;
             relays.stopAll();
             systemState.totalPaintedArea = 0;
+            eventLogger.log(EVENT_STATE_CHANGED, 0, STATE_IDLE, "STOP - Reset licznikow");  // v1.5.0
 
             // NAPRAWA v1.4.0: START GAP BUG
             // Nie resetuj distance gdy Start Gap jest aktywny
@@ -527,6 +553,11 @@ void setup() {
     Serial.println("Inicjalizacja trybu serwisowego...");
     serviceMode.init();
 
+    // NOWE v1.5.0: Inicjalizacja Event Loggera
+    Serial.println("Inicjalizacja Event Loggera...");
+    eventLogger.init();
+    eventLogger.log(EVENT_SYSTEM_START, 0, 0, "System uruchomiony");
+
     // Sprawdzenie kalibracji
     if (!calibration.isCalibrated()) {
         Serial.println("UWAGA: System wymaga kalibracji!");
@@ -617,6 +648,7 @@ void loop() {
             updateDisplay();
         } else if (result == MENU_CALIBRATION_START) {
             systemState.state = STATE_CALIBRATING;
+            eventLogger.log(EVENT_CALIBRATION_START, 0, 0, "Kalibracja rozpoczeta");  // v1.5.0
         } else if (result == MENU_MEASURE_START) {
             systemState.state = STATE_MEASURING;
             systemState.distance = 0;
@@ -635,6 +667,7 @@ void loop() {
         if (result == CALIBRATION_COMPLETE) {
             systemState.state = STATE_IDLE;
             display.showSuccess("Kalibracja zakonczona!");
+            eventLogger.log(EVENT_CALIBRATION_COMPLETE, 0, 0, "Kalibracja ukonczona");  // v1.5.0
             delay(2000);
             updateDisplay();
         } else if (result == CALIBRATION_CANCELLED) {

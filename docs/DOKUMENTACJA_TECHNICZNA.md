@@ -1,7 +1,7 @@
 # Dokumentacja Techniczna
-## System Sterowania Malowaniem Pasów Drogowych v1.4.3
+## System Sterowania Malowaniem Pasów Drogowych v1.5.0
 
-**Status**: ✅ **PRODUCTION READY** - Pełna dokumentacja i schematy
+**Status**: ✅ **PRODUCTION READY** - Naprawione GPIO strapping pins!
 **Data**: 2026-01-26
 **Autor**: MT220126 Engineering Team (200+ lat doświadczenia)
 
@@ -54,6 +54,136 @@ System sterowania malowaniem pasów drogowych to zaawansowane rozwiązanie przem
 ---
 
 ## 2. Historia Wersji
+
+### v1.5.0 (2026-01-26) - KRYTYCZNE NAPRAWY GPIO 🔴
+**Typ**: Bug Fix + Nowe funkcje (OBOWIĄZKOWA AKTUALIZACJA!)
+**Status**: ✅ PRODUCTION READY
+
+#### Naprawiono Błędy KRYTYCZNE
+
+##### 1. **GPIO Strapping Pins - Boot Failure** 🔴
+**Lokalizacja**: `src/config_v140_NEW.h:50-55`
+
+**Problem**:
+- Przekaźniki 1-4 używały GPIO 12-15 (strapping pins ESP32-S3)
+- **GPIO 12 musi być LOW przy boot** (flash voltage selection)
+- Jeśli przekaźnik ON (HIGH) przy boot → **ESP może NIE WYSTARTOWAĆ!**
+- Niestabilne bootowanie w zależności od stanu przekaźników
+
+**Naprawa**:
+```cpp
+// PRZED v1.5.0 (BŁĄD):
+#define RELAY_1_PIN 12  // ⚠️ MTDI - strapping pin!
+#define RELAY_2_PIN 13  // ⚠️ MTCK
+#define RELAY_3_PIN 14  // ⚠️ MTMS
+#define RELAY_4_PIN 15  // ⚠️ MTDO
+
+// PO v1.5.0 (NAPRAWIONE):
+#define RELAY_1_PIN 10  // ✅ Bezpieczny
+#define RELAY_2_PIN 11  // ✅ Bezpieczny
+#define RELAY_3_PIN 8   // ✅ Bezpieczny
+#define RELAY_4_PIN 9   // ✅ Bezpieczny
+```
+
+**WYMAGANE**: Zmiana połączeń hardware (przepięcie 4 przekaźników).
+
+---
+
+##### 2. **BTN_P7D - UART TX Conflict** 🟡
+**Lokalizacja**: `src/config_v140_NEW.h:78`
+
+**Problem**:
+- BTN_P7D używał GPIO 1 (UART TX)
+- Konflikt z Serial debug - niemożność debugowania
+
+**Naprawa**:
+```cpp
+// PRZED: GPIO 1 (UART TX)
+// PO: GPIO 3 (UART RX, bezpieczniejszy)
+#define BTN_P7D_PIN 3
+```
+
+**WYMAGANE**: Zmiana połączenia hardware (1 przewód).
+
+---
+
+##### 3. **sprintf → snprintf (Buffer Overflow Risk)** 🟡
+**Lokalizacja**:
+- `src/display_manager.cpp:133, 171, 200`
+- `src/service_mode.cpp:178`
+
+**Problem**: Użycie `sprintf` bez sprawdzania rozmiaru bufora
+
+**Naprawa**: Wszystkie `sprintf` zamienione na `snprintf` z `sizeof(buffer)`
+
+---
+
+#### Dodano Nowe Funkcje
+
+##### 1. **Event Logger System** 🆕
+**Pliki**: `src/event_logger.h`, `src/event_logger.cpp`
+
+Kompletny system logowania zdarzeń:
+- Ring buffer (100 ostatnich zdarzeń)
+- Timestampy (format XXh XXm XXs)
+- 10 typów zdarzeń:
+  - EVENT_SYSTEM_START
+  - EVENT_PATTERN_CHANGED
+  - EVENT_STATE_CHANGED
+  - EVENT_SAFETY_TRIGGERED
+  - EVENT_CALIBRATION_START/COMPLETE
+  - EVENT_ERROR_OCCURRED
+  - EVENT_BUTTON_PRESSED
+  - EVENT_WIFI_CONNECTED/DISCONNECTED
+
+**Integracja w main.cpp**:
+```cpp
+EventLogger eventLogger;
+eventLogger.init();
+eventLogger.log(EVENT_PATTERN_CHANGED, oldPattern, newPattern, "Zmiana wzorca");
+eventLogger.printToSerial();  // Wydruk wszystkich logów
+```
+
+**Korzyści**:
+- Diagnostyka w terenie
+- Audyt operacji
+- Historia zdarzeń
+- Przygotowane do zapisu na SD
+
+---
+
+#### Zmienione Pliki
+
+**Kod**:
+- `src/config_v140_NEW.h` - GPIO pins (RELAY 1-4: 12-15→8-11, BTN_P7D: 1→3)
+- `src/main.cpp` - Integracja EventLogger, wersja 1.5.0
+- `src/display_manager.cpp` - sprintf→snprintf (3 miejsca)
+- `src/service_mode.cpp` - sprintf→snprintf (1 miejsce)
+
+**Dokumentacja**:
+- `docs/SCHEMATY.md` - GPIO mapping v1.5.0
+- `docs/DOKUMENTACJA_TECHNICZNA.md` - Historia v1.5.0
+- `README.md` - Wersja 1.5.0
+- `CHANGELOG.md` - Wpis v1.5.0
+
+---
+
+#### ⚠️ WYMAGANE ZMIANY HARDWARE
+
+**KRYTYCZNE**: Wersja 1.5.0 wymaga zmian w połączeniach:
+
+1. **Przekaźniki 1-4** (przepięcie na nowe GPIO):
+   - RELAY_1: GPIO 12 → **GPIO 10**
+   - RELAY_2: GPIO 13 → **GPIO 11**
+   - RELAY_3: GPIO 14 → **GPIO 8**
+   - RELAY_4: GPIO 15 → **GPIO 9**
+
+2. **BTN_P7D** (przepięcie):
+   - GPIO 1 → **GPIO 3**
+
+**Po zmianie**: ESP32 bootuje stabilnie niezależnie od stanu przekaźników! ✅
+
+---
 
 ### v1.4.3 (2026-01-26) - DOKUMENTACJA KOMPLETNA ✅
 **Typ**: Dokumentacja + Schematy

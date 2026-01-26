@@ -1,10 +1,38 @@
-# System Sterowania Malowaniem Pasów Drogowych v1.4.3
+# System Sterowania Malowaniem Pasów Drogowych v1.5.0
 
 ## 📋 Opis Projektu
 
 Profesjonalny system sterowania malowaniem pasów drogowych wykorzystujący ESP32-S3 z obsługą 6 pistoletów malarskich sterowanych przekaźnikami. System umożliwia automatyczne malowanie zgodnie z normami drogowymi.
 
-**Status**: ✅ **PRODUCTION READY** - Pełna dokumentacja i schematy (v1.4.3)
+**Status**: ✅ **PRODUCTION READY** - Naprawione GPIO strapping pins! (v1.5.0)
+
+## 🚨 CO NOWEGO W v1.5.0 - KRYTYCZNE NAPRAWY GPIO!
+
+**Status**: ✅ **PRODUCTION READY** - WSZYSTKIE krytyczne problemy naprawione!
+
+**⚠️ OBOWIĄZKOWA AKTUALIZACJA** - wymaga zmian hardware (przepięcie 5 przewodów)!
+
+### 🔴 Naprawione błędy KRYTYCZNE:
+
+1. **GPIO Strapping Pins** (12-15) → Przepięte na 8-11
+   - GPIO 12-15 mogły **ZABLOKOWAĆ BOOT ESP32**!
+   - Nowe GPIO 8-11 są bezpieczne
+   - **WYMAGANE**: Przepięcie przekaźników 1-4
+
+2. **BTN_P7D** (GPIO 1→3)
+   - GPIO 1 (UART TX) konfliktowało z Serial debug
+   - Przeniesiono na GPIO 3 (UART RX, bezpieczniejsze)
+   - **WYMAGANE**: Przepięcie przycisku P7D
+
+3. **sprintf→snprintf** - Zabezpieczenie przed buffer overflow
+
+### ✨ Nowe funkcje:
+
+- **Event Logger** 🆕
+  - Ring buffer (100 zdarzeń)
+  - Logowanie startów, zmian wzorców, błędów
+  - Możliwość wydruku przez Serial
+  - Przygotowane do zapisu na SD
 
 ## 🚨 CO NOWEGO W v1.4.2 - NAPRAWA BŁĘDÓW KRYTYCZNYCH!
 

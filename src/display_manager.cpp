@@ -130,7 +130,7 @@ void DisplayManager::drawSpeedBox(float speed) {
         tft->setTextColor(COLOR_SUCCESS, COLOR_BACKGROUND);
         tft->setCursor(x + 15, y + 35);
         char speedStr[16];
-        sprintf(speedStr, "%.1f", speed);
+        snprintf(speedStr, sizeof(speedStr), "%.1f", speed);  // v1.5.0: snprintf zamiast sprintf
         tft->println(speedStr);
 
         // Jednostka
@@ -168,7 +168,7 @@ void DisplayManager::drawAreaBox(float area) {
         tft->setTextColor(COLOR_SUCCESS, COLOR_BACKGROUND);
         tft->setCursor(x + 15, y + 35);
         char areaStr[32];
-        sprintf(areaStr, "%.2f", area);
+        snprintf(areaStr, sizeof(areaStr), "%.2f", area);  // v1.5.0: snprintf zamiast sprintf
         tft->println(areaStr);
 
         // Jednostka
@@ -197,7 +197,7 @@ void DisplayManager::drawDistanceBox(long distance) {
         tft->setCursor(x, y);
         char distStr[32];
         float distM = distance / 100.0;
-        sprintf(distStr, "Dystans: %.2f m", distM);
+        snprintf(distStr, sizeof(distStr), "Dystans: %.2f m", distM);  // v1.5.0: snprintf zamiast sprintf
         tft->println(distStr);
 
         lastDistance = distance;

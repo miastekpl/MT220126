@@ -45,14 +45,16 @@
 #define JOYSTICK_X_PIN  34  // ADC1 (input-only)
 #define JOYSTICK_Y_PIN  35  // ADC1 (input-only)
 
-// Przekaźniki (6 pistoletów malarskich) - POPRAWIONE
-// Użyto GPIO 12-17 (ciągła grupa, łatwy routing PCB)
-#define RELAY_1_PIN 12  // Pistolet P1 (oś, 12cm)
-#define RELAY_2_PIN 13  // Pistolet P2 (oś, 12cm)
-#define RELAY_3_PIN 14  // Pistolet P3 (oś, 12cm)
-#define RELAY_4_PIN 15  // Pistolet P4 (oś, 24cm)
-#define RELAY_5_PIN 16  // Pistolet P5 (krawędź, 12cm)
-#define RELAY_6_PIN 17  // Pistolet P6 (krawędź, 24cm)
+// Przekaźniki (6 pistoletów malarskich) - NAPRAWIONE v1.5.0
+// KRYTYCZNA ZMIANA: GPIO 12-15 są strapping pins!
+// GPIO 12 musi być LOW przy boot (flash voltage) - jeśli HIGH → ESP może NIE WYSTARTOWAĆ!
+// NOWE MAPOWANIE (bezpieczne piny):
+#define RELAY_1_PIN 10  // Pistolet P1 (oś, 12cm) - ✅ BEZPIECZNY
+#define RELAY_2_PIN 11  // Pistolet P2 (oś, 12cm) - ✅ BEZPIECZNY
+#define RELAY_3_PIN 8   // Pistolet P3 (oś, 12cm) - ✅ BEZPIECZNY
+#define RELAY_4_PIN 9   // Pistolet P4 (oś, 24cm) - ✅ BEZPIECZNY
+#define RELAY_5_PIN 16  // Pistolet P5 (krawędź, 12cm) - ✅ Bez zmian
+#define RELAY_6_PIN 17  // Pistolet P6 (krawędź, 24cm) - ✅ Bez zmian
 
 // Przyciski sterowania - POPRAWIONE (bez konfliktów)
 #define BTN_START_PIN     0   // Start/Pauza (OK dla boot gdy INPUT_PULLUP)
@@ -75,12 +77,11 @@
 #define BTN_P7A_PIN 45  // P-7a
 #define BTN_P7B_PIN 47  // P-7b
 #define BTN_P7C_PIN 48  // P-7c
-#define BTN_P7D_PIN 1   // P-7d (UART TX - OK jako INPUT_PULLUP gdy Serial nie używany)
+#define BTN_P7D_PIN 3   // P-7d (UART RX) - ZMIENIONE z GPIO 1 na GPIO 3 (v1.5.0)
 
-// UWAGA: BTN_P7D używa GPIO 1 (UART TX). Jest to bezpieczne gdy:
-// 1. Serial używany tylko w setup() do debugowania
-// 2. Pin skonfigurowany jako INPUT_PULLUP
-// 3. W produkcji można wyłączyć Serial całkowicie
+// UWAGA v1.5.0: BTN_P7D przeniesiony z GPIO 1 (UART TX) na GPIO 3 (UART RX)
+// GPIO 3 jest bezpieczniejszy - mniej konfliktów z bootowaniem
+// W produkcji Serial może być wyłączony (DEBUG_ENABLED = 0)
 
 // ============================================================================
 // KONFIGURACJA WIFI - v1.2.0

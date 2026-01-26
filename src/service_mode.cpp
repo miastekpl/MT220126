@@ -174,8 +174,8 @@ void ServiceMode::drawGun(uint8_t gunNumber, int16_t x, int16_t y, bool active, 
     tft->setTextColor(textColor, fillColor);
 
     // Wycentruj tekst
-    char gunText[4];
-    sprintf(gunText, "P%d", gunNumber);
+    char gunText[8];  // v1.5.0: Zwiększono rozmiar z 4 na 8 (bezpieczeństwo)
+    snprintf(gunText, sizeof(gunText), "P%d", gunNumber);  // v1.5.0: snprintf zamiast sprintf
     int16_t textX = x + 20;
     int16_t textY = y + 10;
 

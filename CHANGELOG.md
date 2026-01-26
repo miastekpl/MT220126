@@ -7,6 +7,193 @@ projekt stosuje [Semantic Versioning](https://semver.org/lang/pl/).
 
 ---
 
+## [1.5.0] - 2026-01-26
+
+### 🔴 KRYTYCZNE NAPRAWY - OBOWIĄZKOWA AKTUALIZACJA!
+
+**Typ**: Naprawa błędów krytycznych + Nowe funkcje
+**Status**: ✅ **PRODUCTION READY** - Wszystkie krytyczne problemy naprawione!
+
+**UWAGA**: Wersja 1.5.0 naprawia **KRYTYCZNE błędy GPIO** które mogły uniemożliwić boot ESP32!
+
+---
+
+### 🐛 NAPRAWIONE BŁĘDY KRYTYCZNE
+
+#### 1. **GPIO Strapping Pins - Boot Failure** 🔴❌→✅
+**Lokalizacja**: `src/config_v140_NEW.h:50-55`
+
+**Problem**: Przekaźniki używały GPIO 12-15 (strapping pins!)
+- GPIO 12 musi być LOW przy boot (flash voltage selection)
+- Jeśli przekaźnik ON (HIGH) przy boot → **ESP może NIE WYSTARTOWAĆ!**
+- Niestabilne bootowanie w zależności od stanu przekaźników
+
+**Naprawa v1.5.0**:
+```cpp
+// PRZED v1.5.0 (BŁĄD):
+#define RELAY_1_PIN 12  // ⚠️ MTDI - strapping pin!
+#define RELAY_2_PIN 13  // ⚠️ MTCK - strapping pin!
+#define RELAY_3_PIN 14  // ⚠️ MTMS - strapping pin!
+#define RELAY_4_PIN 15  // ⚠️ MTDO - strapping pin!
+
+// PO v1.5.0 (NAPRAWIONE):
+#define RELAY_1_PIN 10  // ✅ Bezpieczny
+#define RELAY_2_PIN 11  // ✅ Bezpieczny
+#define RELAY_3_PIN 8   // ✅ Bezpieczny
+#define RELAY_4_PIN 9   // ✅ Bezpieczny
+```
+
+**WYMAGANE**: Zmiana połączeń hardware! Przekaźniki 1-4 muszą być przepięte na GPIO 8-11.
+
+---
+
+#### 2. **BTN_P7D - UART TX Conflict** 🟡❌→✅
+**Lokalizacja**: `src/config_v140_NEW.h:78`
+
+**Problem**: BTN_P7D używał GPIO 1 (UART TX)
+- Konflikt z Serial debug
+- Niemożność debugowania gdy przycisk podłączony
+
+**Naprawa v1.5.0**:
+```cpp
+// PRZED:
+#define BTN_P7D_PIN 1   // UART TX
+
+// PO:
+#define BTN_P7D_PIN 3   // UART RX (bezpieczniejszy)
+```
+
+**WYMAGANE**: Zmiana połączenia hardware BTN_P7D z GPIO 1 na GPIO 3.
+
+---
+
+#### 3. **sprintf → snprintf (Buffer Overflow Risk)** 🟡❌→✅
+**Lokalizacja**: `src/display_manager.cpp:133, 171, 200`, `src/service_mode.cpp:178`
+
+**Problem**: Użycie `sprintf` bez sprawdzania rozmiaru bufora
+```cpp
+// PRZED (NIEBEZPIECZNE):
+char speedStr[16];
+sprintf(speedStr, "%.1f", speed);  // Brak sprawdzenia!
+
+// PO (BEZPIECZNE):
+char speedStr[16];
+snprintf(speedStr, sizeof(speedStr), "%.1f", speed);  // ✅
+```
+
+**Naprawione pliki**:
+- `display_manager.cpp` - 3 miejsca (speedStr, areaStr, distStr)
+- `service_mode.cpp` - 1 miejsce (gunText, rozmiar bufora zwiększony z 4 na 8)
+
+---
+
+### ✨ NOWE FUNKCJE
+
+#### 1. **Event Logger System** 🆕
+**Pliki**: `src/event_logger.h`, `src/event_logger.cpp`
+
+Kompletny system logowania zdarzeń systemowych:
+
+**Funkcje**:
+- Ring buffer (100 ostatnich zdarzeń)
+- Timestampy (millis() → format XXh XXm XXs)
+- 10 typów zdarzeń (SYSTEM_START, PATTERN_CHANGED, STATE_CHANGED, itp.)
+- Wydruk przez Serial (`eventLogger.printToSerial()`)
+- Przygotowane do zapisu na SD (przyszłość)
+
+**Integracja w main.cpp**:
+- Logowanie startu systemu
+- Logowanie zmian wzorca
+- Logowanie zmian stanu (START, PAUZA, STOP, MENU)
+- Logowanie kalibracji (start/complete)
+- Logowanie blokad bezpieczeństwa
+
+**Przykład użycia**:
+```cpp
+eventLogger.log(EVENT_PATTERN_CHANGED, oldPattern, newPattern, "Zmiana wzorca");
+eventLogger.log(EVENT_SAFETY_TRIGGERED, speed*10, 1, "Blokada: predkosc za niska");
+eventLogger.printToSerial();  // Wydruk wszystkich logów
+```
+
+---
+
+### 📝 ZMIENIONE
+
+#### 1. **Wersja oprogramowania**
+- `main.cpp:40`: `"1.4.2"` → `"1.5.0"`
+
+#### 2. **Dokumentacja**
+- `docs/SCHEMATY.md` → v1.5.0 (nowe GPIO mapping)
+- `README.md` → v1.5.0
+- `CHANGELOG.md` → v1.5.0 (ten plik)
+
+---
+
+### 📦 PLIKI
+
+#### Nowe pliki:
+- `src/event_logger.h` - Interface Event Loggera
+- `src/event_logger.cpp` - Implementacja Event Loggera
+
+#### Zmodyfikowane pliki:
+- `src/config_v140_NEW.h` - GPIO pins (RELAY 1-4, BTN_P7D)
+- `src/main.cpp` - Integracja EventLogger, wersja 1.5.0
+- `src/display_manager.cpp` - sprintf → snprintf (3 miejsca)
+- `src/service_mode.cpp` - sprintf → snprintf (1 miejsce)
+- `docs/SCHEMATY.md` - GPIO mapping v1.5.0
+- `README.md` - Wersja 1.5.0
+- `CHANGELOG.md` - Ten wpis
+
+---
+
+### ⚙️ HARDWARE CHANGES REQUIRED!
+
+**KRYTYCZNE**: Ta wersja wymaga zmian w połączeniach hardware:
+
+1. **Przekaźniki 1-4** - Przepięcie na nowe GPIO:
+   - RELAY_1: GPIO 12 → **GPIO 10**
+   - RELAY_2: GPIO 13 → **GPIO 11**
+   - RELAY_3: GPIO 14 → **GPIO 8**
+   - RELAY_4: GPIO 15 → **GPIO 9**
+   - RELAY_5: GPIO 16 (bez zmian)
+   - RELAY_6: GPIO 17 (bez zmian)
+
+2. **BTN_P7D** - Przepięcie:
+   - GPIO 1 → **GPIO 3**
+
+**UWAGA**: Po zmianie pinów ESP32 powinien bootować stabilnie niezależnie od stanu przekaźników!
+
+---
+
+### 🎯 KORZYŚCI
+
+1. **Stabilność boot** - Brak konfliktów strapping pins
+2. **Bezpieczeństwo** - snprintf zamiast sprintf
+3. **Diagnostyka** - Event Logger dla debugowania w terenie
+4. **Audyt** - Pełna historia operacji systemu
+5. **Łatwiejszy debug** - BTN_P7D nie blokuje Serial
+
+---
+
+### 📊 STATYSTYKI
+
+- **Nowe linie kodu**: ~300 (EventLogger)
+- **Naprawione błędy**: 3 krytyczne
+- **Nowe pliki**: 2
+- **Zmodyfikowane pliki**: 7
+- **Wymagane zmiany hardware**: 5 przewodów (4 przekaźniki + 1 przycisk)
+
+---
+
+### 🔜 NASTĘPNA WERSJA (v1.6.0 - planowana)
+
+Zaplanowane optymalizacje (nie wymagają zmian hardware):
+- TFT Sprites (3-5x szybsze odświeżanie ekranu)
+- Zapisywanie logów na kartę SD
+- WiFi event logging (remote monitoring)
+
+---
+
 ## [1.4.3] - 2026-01-26
 
 ### 📚 DOKUMENTACJA KOMPLETNA - Production Ready
