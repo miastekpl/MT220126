@@ -9,11 +9,11 @@ DualEncoderManager::DualEncoderManager(EventLogger* eventLogger) {
     logger = eventLogger;
 
     // Tworzenie instancji enkoderów
-    // PRIMARY: GPIO 32 (CLK), 33 (DT), 20 (SW)
-    primaryEncoder = new EncoderHandler(32, 33, 20);
+    // PRIMARY: Używamy stałych z config_v140_NEW.h (BUGFIX v1.6.4: było hardcoded!)
+    primaryEncoder = new EncoderHandler(ENCODER_CLK_PIN, ENCODER_DT_PIN, ENCODER_SW_PIN);
 
-    // BACKUP: GPIO 6 (CLK), 7 (DT), 19 (SW)
-    backupEncoder = new EncoderHandler(6, 7, 19);
+    // BACKUP: Używamy stałych z config_v140_NEW.h (BUGFIX v1.6.4: było hardcoded!)
+    backupEncoder = new EncoderHandler(ENCODER_BACKUP_CLK_PIN, ENCODER_BACKUP_DT_PIN, ENCODER_BACKUP_SW_PIN);
 
     // Stan początkowy
     activeEncoder = ENCODER_PRIMARY;
@@ -52,8 +52,10 @@ void DualEncoderManager::init() {
     initialized = true;
 
     DEBUG_PRINTLN("DualEncoderManager: Zainicjalizowany");
-    DEBUG_PRINTLN("  PRIMARY: GPIO 32 (CLK), 33 (DT), 20 (SW)");
-    DEBUG_PRINTLN("  BACKUP:  GPIO 6 (CLK), 7 (DT), 19 (SW)");
+    DEBUG_PRINTF("  PRIMARY: GPIO %d (CLK), %d (DT), %d (SW)\n",
+                 ENCODER_CLK_PIN, ENCODER_DT_PIN, ENCODER_SW_PIN);
+    DEBUG_PRINTF("  BACKUP:  GPIO %d (CLK), %d (DT), %d (SW)\n",
+                 ENCODER_BACKUP_CLK_PIN, ENCODER_BACKUP_DT_PIN, ENCODER_BACKUP_SW_PIN);
 
     if (logger) {
         logger->log(EVENT_SYSTEM_START, 0, 0, "Dual Encoder: Zainicjalizowany");

@@ -43,7 +43,7 @@
 // Drugi enkoder dla zwiększenia niezawodności - automatyczne przełączanie przy awarii
 #define ENCODER_BACKUP_CLK_PIN 6   // Z przerwaniem (INT) - ✅ Wolny pin
 #define ENCODER_BACKUP_DT_PIN  7   // Data - ✅ Wolny pin
-#define ENCODER_BACKUP_SW_PIN  19  // Przycisk backup enkodera
+#define ENCODER_BACKUP_SW_PIN  12  // Przycisk backup enkodera (ZMIENIONE v1.6.4: było 19 - konflikt z TFT_MISO!)
 
 // Selektor (przycisk do nawigacji w menu - osobny od enkodera!)
 #define SELECTOR_PIN 20     // ✅ NOWY - wolny pin bez konfliktów
@@ -74,7 +74,7 @@
 // Przyciski sterowania - POPRAWIONE (bez konfliktów)
 #define BTN_START_PIN     0   // Start/Pauza (OK dla boot gdy INPUT_PULLUP)
 #define BTN_STOP_PIN      2   // Stop
-#define BTN_REVERSE_PIN   4   // Odwrócenie P-3a/P-3b
+#define BTN_REVERSE_PIN   14  // Odwrócenie P-3a/P-3b (ZMIENIONE v1.6.4: było 4 - konflikt z SD_CS!)
 #define BTN_START_GAP_PIN 46  // Start od przerwy (v1.3.0)
 
 // Przyciski wzorców (15 wzorców) - POPRAWIONE (ESP32-S3 specific GPIOs)

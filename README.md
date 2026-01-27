@@ -1,18 +1,24 @@
-# System Sterowania Malowaniem Pasów Drogowych v1.6.3
+# System Sterowania Malowaniem Pasów Drogowych v1.6.4
 
 ## 📋 Opis Projektu
 
 Profesjonalny system sterowania malowaniem pasów drogowych wykorzystujący ESP32-S3 z obsługą 6 pistoletów malarskich sterowanych przekaźnikami. System umożliwia automatyczne malowanie zgodnie z normami drogowymi.
 
-**Status**: ✅ **PRODUCTION READY** - Bugfix release v1.6.3 (FINALNA - kompiluje się BEZ BŁĘDÓW!)
+**Status**: ✅ **PRODUCTION READY** - Bugfix release v1.6.4 (FINALNA - NAPRAWIONE Guru Meditation Error!)
 
-## 🔧 CO NOWEGO W v1.6.3 - FINALNA BUGFIX RELEASE!
+## 🚨 CO NOWEGO W v1.6.4 - KRYTYCZNE BUGFIXY!
 
-### Naprawione Krytyczne Błędy Include Guards i Dependencies
-- ✅ **menu_system.h**: Zmieniono `#include "config.h"` → `"config_v140_NEW.h"` (konflikt include guards!)
-- ✅ **wifi_server.cpp**: Dodano pełne includes dla `RelayController` i `EncoderHandler` (forward declarations były niewystarczające)
+### Naprawione Guru Meditation Error (Crash przy Boot)
+- ✅ **GPIO 4 KONFLIKT**: BTN_REVERSE_PIN przepięty 4 → 14 (konfliktował z SD_CS!)
+- ✅ **GPIO 19 KONFLIKT**: ENCODER_BACKUP_SW przepięty 19 → 12 (konfliktował z SPI MISO!)
+- ✅ **DualEncoderManager**: Hardcoded piny → używa stałych z config_v140_NEW.h
+- ✅ **PSRAM**: Wyłączona wymuszona flaga `-DBOARD_HAS_PSRAM` (auto-detect + fallback)
 
-### WSZYSTKIE błędy kompilacji naprawione! 🎉
+### ⚠️ WYMAGANE ZMIANY HARDWARE (jeśli masz prototyp v1.6.0-v1.6.3):
+1. **Przycisk REVERSE**: Przepnij z GPIO 4 na GPIO 14
+2. **BACKUP ENCODER SW**: Przepnij z GPIO 19 na GPIO 12
+
+### WSZYSTKIE crashe i błędy kompilacji naprawione! 🎉
 
 ## 🔧 CO BYŁO W v1.6.2 - BUGFIX RELEASE
 

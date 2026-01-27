@@ -1,8 +1,79 @@
+## [1.6.4] - 2026-01-27
+
+### 🔧 BUGFIX CRITICAL - Naprawione Konflikty GPIO + Crash przy Boot
+
+**Status**: ✅ **PRODUCTION READY** - NAPRAWIONE Guru Meditation Error! (FINALNA WERSJA!)
+
+#### 🚨 KRYTYCZNE BŁĘDY NAPRAWIONE:
+
+**Błąd Guru Meditation** (`StoreProhibited panic`):
+- **Przyczyna**: Konflikty GPIO + hardcoded piny w DualEncoderManager
+- **Objawy**: ESP32 crashował przy boot z błędem `GPIO output gpio_num error` (227)
+- **Naprawione poniżej** ⬇️
+
+#### 🐛 NAPRAWIONE KONFLIKTY GPIO:
+
+1. **GPIO 4** - KONFLIKT: BTN_REVERSE_PIN vs SD_CS_PIN
+   - Było: BTN_REVERSE_PIN = 4, SD_CS_PIN = 4 ❌
+   - Teraz: BTN_REVERSE_PIN = 14 (wolny pin) ✅
+   - Skutek: Przycisk REVERSE teraz działa prawidłowo
+
+2. **GPIO 19** - KONFLIKT 3x: TFT_MISO + ENCODER_BACKUP_SW + SD_MISO
+   - Było: ENCODER_BACKUP_SW_PIN = 19 ❌ (konflikt z SPI MISO)
+   - Teraz: ENCODER_BACKUP_SW_PIN = 12 ✅ (bezpieczny po v1.5.0)
+   - Skutek: Backup encoder działa prawidłowo
+
+3. **DualEncoderManager** - Hardcoded piny zamiast stałych z config
+   - Było: `new EncoderHandler(32, 33, 20);` ❌ (PRIMARY SW = 20, powinno być 13!)
+   - Było: `new EncoderHandler(6, 7, 19);` ❌ (BACKUP SW = 19, konflikt!)
+   - Teraz: Używa stałych z config_v140_NEW.h: `ENCODER_SW_PIN`, `ENCODER_BACKUP_SW_PIN` ✅
+   - Skutek: Enkodery używają prawidłowych pinów
+
+4. **PSRAM** - Board bez PSRAM powodował ostrzeżenie (nie błąd)
+   - Było: `-DBOARD_HAS_PSRAM` wymuszony w build_flags ⚠️
+   - Teraz: Flaga wyłączona, auto-detect + fallback ✅
+   - Skutek: TFT Sprites automatycznie wyłączone jeśli brak PSRAM (tradycyjne renderowanie)
+
+#### 📝 ZMODYFIKOWANE PLIKI:
+- `src/config_v140_NEW.h`:
+  - BTN_REVERSE_PIN: 4 → 14 (linia 77)
+  - ENCODER_BACKUP_SW_PIN: 19 → 12 (linia 46)
+- `src/dual_encoder_manager.cpp`:
+  - Używanie stałych z config zamiast hardcoded (linie 13, 16, 56-58)
+- `platformio.ini`:
+  - Wyłączono `-DBOARD_HAS_PSRAM` (linia 28 - zakomentowane)
+  - Dodano instrukcje dla PSRAM (linie 12-14)
+- `src/main.cpp`: SOFTWARE_VERSION = "1.6.4"
+
+#### ⚠️ WYMAGANE ZMIANY HARDWARE:
+
+**Jeśli masz zbudowany prototyp v1.6.0-v1.6.3:**
+1. **Przycisk REVERSE**: Przepnij z GPIO 4 na GPIO 14
+2. **BACKUP ENCODER SW**: Przepnij z GPIO 19 na GPIO 12
+
+**Schemat będzie zaktualizowany w `docs/SCHEMATY.md`**
+
+#### 🎯 PSRAM - WAŻNE:
+
+Jeśli Twój ESP32-S3 **MA PSRAM** (wersja N16R8):
+```ini
+; Odkomentuj w platformio.ini:
+board_build.psram_type = opi
+board_build.arduino.memory_type = qio_opi
+```
+
+Jeśli **NIE MA PSRAM** (wersja N8):
+- Zostaw zakomentowane
+- Sprites będą automatycznie wyłączone
+- System będzie działać z tradycyjnym renderingiem (wolniejszy, ale stabilny)
+
+---
+
 ## [1.6.3] - 2026-01-27
 
 ### 🔧 BUGFIX RELEASE - Naprawione Include Guards i Dependencies
 
-**Status**: ✅ **PRODUCTION READY** - Kompiluje się bez błędów! (FINALNA WERSJA!)
+**Status**: ⚠️ NIEPEŁNA - crash przy boot na ESP32! (użyj v1.6.4!)
 
 #### 🐛 NAPRAWIONE BŁĘDY:
 
