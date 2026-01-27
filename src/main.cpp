@@ -511,7 +511,7 @@ void setup() {
     Serial.printf("RELAY PINS: R1=%d R2=%d R3=%d R4=%d R5=%d R6=%d\n", RELAY_1_PIN, RELAY_2_PIN, RELAY_3_PIN, RELAY_4_PIN, RELAY_5_PIN, RELAY_6_PIN);
     Serial.printf("BUTTONS: REVERSE=%d START=%d STOP=%d\n", BTN_REVERSE_PIN, BTN_START_PIN, BTN_STOP_PIN);
     Serial.printf("TFT: MISO=%d MOSI=%d SCLK=%d CS=%d DC=%d RST=%d\n", TFT_MISO, TFT_MOSI, TFT_SCLK, TFT_CS, TFT_DC, TFT_RST);
-    Serial.printf("SD CARD: MISO=%d MOSI=%d SCLK=%d CS=%d\n", SD_MISO, SD_MOSI, SD_SCK, SD_CS_PIN);
+    Serial.printf("SD CARD: MISO=%d MOSI=%d SCLK=%d CS=%d\n", SD_MISO_PIN, SD_MOSI_PIN, SD_SCK_PIN, SD_CS_PIN);
     Serial.println("--- END GPIO DEBUG ---\n");
 
     // NOWE v1.4.0: Inicjalizacja mutexów FreeRTOS
