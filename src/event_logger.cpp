@@ -1,6 +1,6 @@
 /**
  * Implementacja Event Loggera
- * v1.5.0
+ * v1.6.5
  */
 
 #include "event_logger.h"

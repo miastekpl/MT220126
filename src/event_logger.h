@@ -1,12 +1,12 @@
 /**
  * Event Logger - System logowania zdarzeń
- * Wersja: 1.5.0
+ * Wersja: 1.6.5
  *
  * Funkcje:
  * - Ring buffer dla zdarzeń (100 najnowszych)
  * - Timestampy z millis()
  * - Wydruk przez Serial
- * - Możliwość zapisu do SD (przyszłość)
+ * - Zapis do SD przez SDCardManager (od v1.6.0)
  *
  * Copyright (c) 2026 MT220126 Engineering Team
  */
@@ -103,8 +103,8 @@ public:
      */
     bool isInitialized() { return initialized; }
 
-    // Przyszłość: Zapis do SD
-    // void saveToSD(const char* filename);
+    // UWAGA: Zapis do SD jest realizowany przez SDCardManager (v1.6.0+)
+    // SDCardManager automatycznie pobiera zdarzenia z EventLogger i zapisuje na kartę SD
 };
 
 #endif // EVENT_LOGGER_H

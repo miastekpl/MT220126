@@ -4,6 +4,17 @@
 
 **Status**: ✅ **PRODUCTION READY** - DEFINITYWNIE NAPRAWIONY Guru Meditation Error!
 
+#### 📝 DOKUMENTACJA - Usunięcie przestarzałego TODO:
+
+**Plik**: `src/event_logger.h`
+
+Usunięto przestarzały komentarz TODO "Przyszłość: Zapis do SD" - funkcjonalność
+została już zaimplementowana w v1.6.0 poprzez klasę `SDCardManager`.
+
+- Zaktualizowano nagłówek pliku (wersja 1.5.0 → 1.6.5)
+- Zmieniono komentarz na informację o SDCardManager
+- Zaktualizowano wersję w `event_logger.cpp`
+
 #### 🔍 GŁÓWNY PROBLEM ZIDENTYFIKOWANY:
 
 **Include Guard Cache Conflict** - C preprocessor cachował guard `CONFIG_H` z pierwszego pliku
@@ -64,7 +75,7 @@ Pozwala użytkownikowi natychmiast zweryfikować czy pin values są poprawne.
 
 **4. Wersja Software**: SOFTWARE_VERSION = "1.6.5"
 
-#### 📝 ZMODYFIKOWANE PLIKI (4):
+#### 📝 ZMODYFIKOWANE PLIKI (6):
 
 1. **src/config_v140_NEW.h**:
    - Linia 15-16: `CONFIG_H` → `CONFIG_V140_NEW_H`
@@ -79,6 +90,14 @@ Pozwala użytkownikowi natychmiast zweryfikować czy pin values są poprawne.
 
 4. **src/config_v130_OLD.h** → **src/config_v130_DEPRECATED.h.bak**:
    - Zmiana nazwy (deprecation, nie usunięcie)
+
+5. **src/event_logger.h**:
+   - Usunięto przestarzały komentarz TODO o zapisie do SD
+   - Zaktualizowano nagłówek (wersja 1.5.0 → 1.6.5)
+   - Dodano informację o SDCardManager
+
+6. **src/event_logger.cpp**:
+   - Zaktualizowano wersję w nagłówku (v1.5.0 → v1.6.5)
 
 #### 📋 INSTRUKCJE KOMPILACJI:
 
