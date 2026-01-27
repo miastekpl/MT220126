@@ -1,16 +1,24 @@
-# System Sterowania Malowaniem Pasów Drogowych v1.6.2
+# System Sterowania Malowaniem Pasów Drogowych v1.6.3
 
 ## 📋 Opis Projektu
 
 Profesjonalny system sterowania malowaniem pasów drogowych wykorzystujący ESP32-S3 z obsługą 6 pistoletów malarskich sterowanych przekaźnikami. System umożliwia automatyczne malowanie zgodnie z normami drogowymi.
 
-**Status**: ✅ **PRODUCTION READY** - Bugfix release v1.6.2 (kompiluje się bez błędów!)
+**Status**: ✅ **PRODUCTION READY** - Bugfix release v1.6.3 (FINALNA - kompiluje się BEZ BŁĘDÓW!)
 
-## 🔧 CO NOWEGO W v1.6.2 - BUGFIX RELEASE!
+## 🔧 CO NOWEGO W v1.6.3 - FINALNA BUGFIX RELEASE!
+
+### Naprawione Krytyczne Błędy Include Guards i Dependencies
+- ✅ **menu_system.h**: Zmieniono `#include "config.h"` → `"config_v140_NEW.h"` (konflikt include guards!)
+- ✅ **wifi_server.cpp**: Dodano pełne includes dla `RelayController` i `EncoderHandler` (forward declarations były niewystarczające)
+
+### WSZYSTKIE błędy kompilacji naprawione! 🎉
+
+## 🔧 CO BYŁO W v1.6.2 - BUGFIX RELEASE
 
 ### Naprawione Dodatkowe Błędy Kompilacji (po v1.6.1)
-- ✅ **menu_system.cpp**: Dodano `#include "config_v140_NEW.h"` dla `JOYSTICK_SW_PIN`
-- ✅ **wifi_server.h**: Dodano forward declarations dla `RelayController` i `EncoderHandler`
+- ✅ **menu_system.cpp**: Dodano `#include "config_v140_NEW.h"` dla `JOYSTICK_SW_PIN` (niepełna poprawka - zobacz v1.6.3)
+- ✅ **wifi_server.h**: Dodano forward declarations dla `RelayController` i `EncoderHandler` (niepełna poprawka - zobacz v1.6.3)
 - ✅ **service_mode.cpp**: Poprawiono wywołania `::getPattern()` - używanie globalnej funkcji zamiast metody klasy
 
 ## 🔧 CO BYŁO W v1.6.1 - BUGFIX RELEASE!

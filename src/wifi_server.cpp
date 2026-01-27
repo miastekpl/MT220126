@@ -11,6 +11,8 @@
  */
 
 #include "wifi_server.h"
+#include "relay_controller.h"  // BUGFIX v1.6.3: Potrzebne dla relays->stopAll()
+#include "encoder_handler.h"   // BUGFIX v1.6.3: Potrzebne dla pełnej definicji
 
 // HTML dashboard - responsywny, czytelny, prosty
 const char HTML_PAGE[] PROGMEM = R"rawliteral(

@@ -6,7 +6,7 @@
 #define MENU_SYSTEM_H
 
 #include <Arduino.h>
-#include "config.h"
+#include "config_v140_NEW.h"  // BUGFIX v1.6.3: Użyj NOWEGO pliku config!
 #include "display_manager.h"
 #include "encoder_handler.h"
 
