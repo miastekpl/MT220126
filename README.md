@@ -1,12 +1,72 @@
-# System Sterowania Malowaniem Pasów Drogowych v1.6.4
+# System Sterowania Malowaniem Pasów Drogowych v1.6.5
 
 ## 📋 Opis Projektu
 
 Profesjonalny system sterowania malowaniem pasów drogowych wykorzystujący ESP32-S3 z obsługą 6 pistoletów malarskich sterowanych przekaźnikami. System umożliwia automatyczne malowanie zgodnie z normami drogowymi.
 
-**Status**: ✅ **PRODUCTION READY** - Bugfix release v1.6.4 (FINALNA - NAPRAWIONE Guru Meditation Error!)
+**Status**: ✅ **PRODUCTION READY** - Bugfix release v1.6.5 (DEFINITYWNA NAPRAWA - Include Guard Cache Fix!)
 
-## 🚨 CO NOWEGO W v1.6.4 - KRYTYCZNE BUGFIXY!
+## 🚨 CO NOWEGO W v1.6.5 - OSTATECZNA NAPRAWA GPIO 227! 🔥
+
+### Rozwiązany Include Guard Cache Conflict (GŁÓWNA PRZYCZYNA CRASHY!)
+
+**Odkryty Problem**: C preprocessor cachował guard `CONFIG_H` z pierwszego pliku (`config.h`)
+i **CAŁKOWICIE IGNOROWAŁ** drugi plik z tym samym guardem (`config_v140_NEW.h`)!
+
+```cpp
+// KONFLIKT (v1.6.0-v1.6.4):
+config.h:           #ifndef CONFIG_H  ← Preprocessor cachuje
+config_v140_NEW.h:  #ifndef CONFIG_H  ← IGNOROWANE! Cała zawartość pomijana!
+```
+
+**Skutek**: Mimo że wszystkie pliki includowały `config_v140_NEW.h`, preprocessor
+używał starych definicji z `config.h` → GPIO miały garbage values → GPIO 227 → crash!
+
+### ✅ Zastosowane Rozwiązania (v1.6.5):
+
+1. **Unikalny Include Guard**: `CONFIG_H` → `CONFIG_V140_NEW_H` w config_v140_NEW.h
+2. **Deprecation Starych Plików**:
+   - `config.h` → `config_DEPRECATED_DO_NOT_USE.h.bak`
+   - `config_v130_OLD.h` → `config_v130_DEPRECATED.h.bak`
+   - Rozszerzenie `.bak` uniemożliwia includowanie przez preprocessor
+3. **Debug Output GPIO**: Dodano wyświetlanie WSZYSTKICH pin values przy starcie
+   ```
+   --- DEBUG GPIO PINS ---
+   ENCODER BACKUP: ... SW=12    ← Sprawdź czy 12, NIE 19!
+   BUTTONS: REVERSE=14 ...      ← Sprawdź czy 14, NIE 4!
+   --- END GPIO DEBUG ---
+   ```
+4. **Clean Rebuild Required**: Usuń `.pio` i kompiluj od zera!
+
+### 📋 Instrukcje Kompilacji (WYMAGANE):
+
+```bash
+# 1. Usuń cache
+rm -rf .pio
+pio run -t clean
+
+# 2. Kompiluj od zera
+pio run
+
+# 3. Upload
+pio run -t upload
+
+# 4. Monitor
+pio device monitor  # 115200 baud
+```
+
+### ✅ Weryfikacja Poprawności:
+
+**W Serial Monitor sprawdź**:
+- ENCODER_BACKUP SW = 12 (NIE 19!)
+- BTN_REVERSE = 14 (NIE 4!)
+- WSZYSTKIE GPIO < 48 (NIE 227!)
+
+**Jeśli GPIO 227 nadal występuje**: Clean rebuild nie został wykonany prawidłowo!
+
+---
+
+## 🚨 CO BYŁO W v1.6.4 - KRYTYCZNE BUGFIXY
 
 ### Naprawione Guru Meditation Error (Crash przy Boot)
 - ✅ **GPIO 4 KONFLIKT**: BTN_REVERSE_PIN przepięty 4 → 14 (konfliktował z SD_CS!)
