@@ -185,7 +185,8 @@ void ServiceMode::drawGun(uint8_t gunNumber, int16_t x, int16_t y, bool active, 
 
 void ServiceMode::activateGunsByPattern(PatternType pattern) {
     // Pobierz informacje o wzorcu
-    Pattern* pat = getPattern(pattern);
+    // BUGFIX v1.6.2: Użyj globalnej funkcji ::getPattern(), nie metody klasy
+    Pattern* pat = ::getPattern(pattern);
     if (!pat) {
         DEBUG_PRINTLN("ServiceMode: BLAD - Nieznany wzorzec!");
         return;
@@ -220,7 +221,8 @@ void ServiceMode::deactivateAllGuns() {
 }
 
 bool ServiceMode::isGunEnabledForPattern(uint8_t gunNumber, PatternType pattern) {
-    Pattern* pat = getPattern(pattern);
+    // BUGFIX v1.6.2: Użyj globalnej funkcji ::getPattern(), nie metody klasy
+    Pattern* pat = ::getPattern(pattern);
     if (!pat) return false;
 
     switch (gunNumber) {
@@ -235,7 +237,8 @@ bool ServiceMode::isGunEnabledForPattern(uint8_t gunNumber, PatternType pattern)
 }
 
 const char* ServiceMode::getPatternShortName(PatternType pattern) {
-    Pattern* pat = getPattern(pattern);
+    // BUGFIX v1.6.2: Użyj globalnej funkcji ::getPattern(), nie metody klasy
+    Pattern* pat = ::getPattern(pattern);
     return pat ? pat->name : "???";
 }
 

@@ -40,7 +40,7 @@
 #include "sd_card_manager.h"    // NOWE v1.6.0: SD Card logging
 
 // Wersja oprogramowania
-const char* SOFTWARE_VERSION = "1.6.1";  // BUGFIX v1.6.1: Naprawione błędy kompilacji
+const char* SOFTWARE_VERSION = "1.6.2";  // BUGFIX v1.6.2: Dodatkowe poprawki kompilacji
 const char* BUILD_DATE = __DATE__;
 const char* BUILD_TIME = __TIME__;
 

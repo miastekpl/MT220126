@@ -1,3 +1,38 @@
+## [1.6.2] - 2026-01-27
+
+### 🔧 BUGFIX RELEASE - Dodatkowe Poprawki Kompilacji
+
+**Status**: ✅ **PRODUCTION READY** - Kompiluje się bez błędów!
+
+#### 🐛 NAPRAWIONE BŁĘDY:
+
+1. **menu_system.cpp** (linie 29, 60) - Brak include dla config_v140_NEW.h
+   - Problem: `JOYSTICK_SW_PIN` niezadeklarowany w scope
+   - Rozwiązanie: Dodano `#include "config_v140_NEW.h"` na początku pliku
+
+2. **wifi_server.h** (linie 30-31) - Brak forward declarations
+   - Problem: `RelayController` i `EncoderHandler` nie były zadeklarowane
+   - Rozwiązanie: Dodano forward declarations przed klasą WiFiServerManager:
+     ```cpp
+     class RelayController;
+     class EncoderHandler;
+     ```
+
+3. **service_mode.cpp** (linie 188, 223, 238) - Konflikt nazw funkcji getPattern()
+   - Problem: ServiceMode ma metodę `getPattern()` bez parametrów, kod próbował wywołać globalną `getPattern(PatternType)`
+   - Rozwiązanie: Użyto scope resolution operator `::getPattern(pattern)` dla jawnego wywołania globalnej funkcji z patterns.h
+
+#### 📝 ZMODYFIKOWANE PLIKI:
+- `src/menu_system.cpp` - Dodano include config_v140_NEW.h
+- `src/wifi_server.h` - Dodano forward declarations
+- `src/service_mode.cpp` - Poprawiono wywołania ::getPattern()
+
+#### ⚠️ UWAGA:
+Ta wersja to kolejny **hotfix** dla v1.6.0 - naprawia 3 dodatkowe błędy kompilacji wykryte po v1.6.1.
+Wszystkie funkcje v1.6.0 (Dual Encoder, SD Logging, TFT Sprites) działają bez zmian.
+
+---
+
 ## [1.6.1] - 2026-01-27
 
 ### 🔧 BUGFIX RELEASE - Naprawione Błędy Kompilacji

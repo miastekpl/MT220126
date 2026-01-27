@@ -23,6 +23,10 @@
 #include "config.h"
 #include "patterns.h"
 
+// BUGFIX v1.6.2: Forward declarations dla RelayController i EncoderHandler
+class RelayController;
+class EncoderHandler;
+
 class WiFiServerManager {
 private:
     WebServer* server;

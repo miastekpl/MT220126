@@ -3,6 +3,7 @@
  */
 
 #include "menu_system.h"
+#include "config_v140_NEW.h"  // BUGFIX v1.6.2: Potrzebne dla JOYSTICK_SW_PIN
 
 const char* MENU_ITEMS_TEXT[MENU_ITEM_COUNT] = {
     "Kalibracja",
