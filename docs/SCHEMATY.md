@@ -1,9 +1,33 @@
 # Schematy Połączeń Elektrycznych
-## System Sterowania Malowaniem Pasów Drogowych v1.6.0
+## System Sterowania Malowaniem Pasów Drogowych v1.6.4
 
-**Status**: ✅ KOMPLETNE SCHEMATY PRODUKCYJNE - DUAL ENCODER + SD CARD!
-**Data**: 2026-01-26
+**Status**: ✅ KOMPLETNE SCHEMATY PRODUKCYJNE - DUAL ENCODER + SD CARD + GPIO FIXES!
+**Data**: 2026-01-27
 **Autor**: MT220126 Engineering Team
+
+---
+
+## 🆕 ZMIANY w wersji 1.6.4 - NAPRAWIONE KONFLIKTY GPIO
+
+### Krytyczne poprawki:
+
+#### 1. **GPIO 4 KONFLIKT** (BTN_REVERSE vs SD_CS)
+- **v1.6.0-v1.6.3**: BTN_REVERSE = GPIO 4 ❌ **KONFLIKT Z SD_CS!**
+- **v1.6.4**: BTN_REVERSE = GPIO 14 ✅ **NAPRAWIONE**
+- SD_CS pozostaje na GPIO 4
+
+#### 2. **GPIO 19 KONFLIKT** (3x użycie!)
+- **Poprawne**: GPIO 19 = SPI MISO (TFT + SD Card)
+- **v1.6.0-v1.6.3**: ENCODER_BACKUP_SW = GPIO 19 ❌ **KONFLIKT!**
+- **v1.6.4**: ENCODER_BACKUP_SW = GPIO 12 ✅ **NAPRAWIONE**
+
+#### 3. **PRIMARY ENCODER SW**
+- **v1.6.0-v1.6.3**: Hardcoded = GPIO 20 ❌ (było w kodzie!)
+- **v1.6.4**: Używa ENCODER_SW_PIN = GPIO 13 ✅ **NAPRAWIONE**
+
+⚠️ **WYMAGANE ZMIANY HARDWARE (jeśli masz prototyp v1.6.0-v1.6.3)**:
+1. **Przycisk REVERSE**: Przepnij z GPIO 4 na GPIO 14
+2. **BACKUP ENCODER SW**: Przepnij z GPIO 19 na GPIO 12
 
 ---
 
@@ -12,13 +36,13 @@
 ### Nowe komponenty:
 
 #### 1. **DUAL ENCODER SYSTEM** (redundancja)
-- **PRIMARY Encoder**: GPIO 32 (CLK), 33 (DT), 20 (SW)
-- **BACKUP Encoder**: GPIO 6 (CLK), 7 (DT), 19 (SW) ✅ **NOWY**
+- **PRIMARY Encoder**: GPIO 32 (CLK), 33 (DT), 13 (SW) ✅ **POPRAWIONE v1.6.4**
+- **BACKUP Encoder**: GPIO 6 (CLK), 7 (DT), 12 (SW) ✅ **POPRAWIONE v1.6.4**
 - Automatyczna detekcja awarii i przełączanie
 - 99.9% uptime
 
 #### 2. **SD CARD MODULE** (trwałe logi)
-- **CS**: GPIO 4 ✅ **NOWY** (osobny od TFT!)
+- **CS**: GPIO 4 (osobny od TFT!)
 - **MOSI**: GPIO 23 (współdzielony z TFT)
 - **MISO**: GPIO 19 (współdzielony z TFT)
 - **SCK**: GPIO 18 (współdzielony z TFT)
@@ -151,24 +175,24 @@ ESP32-S3 N16R8 ma 49 GPIO (0-48), nie wszystkie są wyprowadzone na standardowyc
    │ GPIO 23 (MOSI)│         │ GPIO 17 → RELAY_6    │
    └──────────────┘          └──────────────────────┘
 
-   DUAL ENCODER (v1.6.0):    SD CARD (v1.6.0):
+   DUAL ENCODER (v1.6.4):    SD CARD (v1.6.0):
    ┌──────────────────────┐  ┌──────────────────────┐
-   │ PRIMARY:             │  │ GPIO 4  → CS ✅ NOWY │
+   │ PRIMARY:             │  │ GPIO 4  → CS         │
    │  GPIO 32 → CLK       │  │ GPIO 23 → MOSI       │
    │  GPIO 33 → DT        │  │ GPIO 19 → MISO       │
-   │  GPIO 20 → SW        │  │ GPIO 18 → SCK        │
+   │  GPIO 13 → SW ✅ FIX │  │ GPIO 18 → SCK        │
    │                      │  └──────────────────────┘
-   │ BACKUP: ✅ NOWY      │
+   │ BACKUP: ✅ v1.6.0    │
    │  GPIO 6  → CLK       │
    │  GPIO 7  → DT        │
-   │  GPIO 19 → SW        │
+   │  GPIO 12 → SW ✅ FIX │
    └──────────────────────┘
 
    JOYSTICK:                 STEROWANIE:
    ┌──────────────┐          ┌──────────────────────┐
    │ GPIO 34 (JOY_X)  │      │ GPIO 0  → START      │
    │ GPIO 35 (JOY_Y)  │      │ GPIO 2  → STOP       │
-   └──────────────┘          │ GPIO 4  → REVERSE    │
+   └──────────────┘          │ GPIO 14 → REVERSE ✅ │
                              │ GPIO 46 → START_GAP  │
                              │ GPIO 20 → SELEKTOR   │
                              └──────────────────────┘
@@ -180,16 +204,19 @@ ESP32-S3 N16R8 ma 49 GPIO (0-48), nie wszystkie są wyprowadzone na standardowyc
    │ GPIO 44→P6   45→P7A  47→P7B  48→P7C  3→P7D ✅ │
    └────────────────────────────────────────────────┘
 
-   ⚠️ UWAGI SPECJALNE v1.6.0:
-   - GPIO 6, 7, 19: BACKUP ENCODER (redundancja)
+   ⚠️ UWAGI SPECJALNE v1.6.4:
+   - GPIO 6, 7, 12: BACKUP ENCODER (redundancja) ✅ v1.6.4 FIX (było 19!)
+   - GPIO 13: PRIMARY ENCODER SW ✅ v1.6.4 FIX (było hardcoded 20!)
+   - GPIO 14: BTN_REVERSE ✅ v1.6.4 FIX (było 4 - konflikt z SD CS!)
    - GPIO 4: SD CARD CS (osobny od TFT CS=5)
+   - GPIO 19: SPI MISO (współdzielony TFT + SD)
    - GPIO 36, 39: Input-only (zewnętrzne pull-up 10kΩ)
    - GPIO 0: Boot pin (nie trzymaj przy starcie)
    - GPIO 3: UART RX (BTN_P7D, bezpieczne)
    - SPI współdzielone: TFT + SD używają tego samego MOSI/MISO/SCK
 ```
 
-### 2.2 Tabela Pinów (✅ v1.6.0 - KOMPLETNA)
+### 2.2 Tabela Pinów (✅ v1.6.4 - KOMPLETNA + GPIO FIXES)
 
 | GPIO | Funkcja | Typ | Opis |
 |------|---------|-----|------|
@@ -204,12 +231,13 @@ ESP32-S3 N16R8 ma 49 GPIO (0-48), nie wszystkie są wyprowadzone na standardowyc
 | **Enkoder PRIMARY** ||||
 | 32 | ENC_CLK | Input | Encoder Clock (przerwanie) |
 | 33 | ENC_DT | Input | Encoder Data |
-| 20 | ENC_SW | Input | Encoder Switch (SELEKTOR MENU) |
+| 13 | ENC_SW | Input | Encoder Switch ✅ v1.6.4 FIX (było 20!) |
 | **Enkoder BACKUP** ✅ v1.6.0 ||||
 | 6 | ENC_BACKUP_CLK | Input | Backup Encoder Clock (przerwanie) |
 | 7 | ENC_BACKUP_DT | Input | Backup Encoder Data |
-| 19 | ENC_BACKUP_SW | Input | Backup Encoder Switch |
+| 12 | ENC_BACKUP_SW | Input | Backup Encoder Switch ✅ v1.6.4 FIX (było 19!) |
 | **Joystick** ||||
+| 20 | SELEKTOR | Input | Selektor menu (przycisk joysticka) |
 | 34 | JOY_X | ADC | Oś X (analogowa) |
 | 35 | JOY_Y | ADC | Oś Y (analogowa) |
 | **Przekaźniki** ✅ v1.5.0 (naprawione strapping pins) ||||
@@ -222,7 +250,7 @@ ESP32-S3 N16R8 ma 49 GPIO (0-48), nie wszystkie są wyprowadzone na standardowyc
 | **Przyciski Sterowania** ||||
 | 0 | BTN_START | Input | Start/Pauza |
 | 2 | BTN_STOP | Input | Stop |
-| 4 | BTN_REVERSE | Input | Odwróć wzorzec (P-3a/P-3b) |
+| 14 | BTN_REVERSE | Input | Odwróć wzorzec (P-3a/P-3b) ✅ v1.6.4 FIX (było 4!) |
 | 46 | BTN_START_GAP | Input | Start Od Przerwy (v1.3.0) |
 | **Przyciski Wzorców** ||||
 | 26 | BTN_P1A | Input | Wzorzec P-1a |
@@ -241,10 +269,13 @@ ESP32-S3 N16R8 ma 49 GPIO (0-48), nie wszystkie są wyprowadzone na standardowyc
 | 48 | BTN_P7C | Input | Wzorzec P-7c |
 | 3  | BTN_P7D | Input | Wzorzec P-7d (UART RX) ✅ v1.5.0 |
 
-**⚠️ UWAGI KRYTYCZNE v1.6.0**:
-- **GPIO 6, 7**: BACKUP ENCODER (redundancja, nowy w v1.6.0)
+**⚠️ UWAGI KRYTYCZNE v1.6.4**:
+- **GPIO 13**: PRIMARY ENCODER SW ✅ v1.6.4 FIX (było hardcoded 20!)
+- **GPIO 12**: BACKUP ENCODER SW ✅ v1.6.4 FIX (było 19 - konflikt z MISO!)
+- **GPIO 14**: BTN_REVERSE ✅ v1.6.4 FIX (było 4 - konflikt z SD_CS!)
+- **GPIO 6, 7**: BACKUP ENCODER CLK/DT (redundancja, nowy w v1.6.0)
 - **GPIO 4**: SD CARD CS (nowy w v1.6.0, osobny od TFT!)
-- **GPIO 19**: Współdzielony! BACKUP_SW + SPI_MISO (multiplexing przez software)
+- **GPIO 19**: SPI MISO (współdzielony TFT + SD, BEZ enkodera!)
 - GPIO 36, 39: Input-only pins (bez wbudowanych pull-up, wymagają zewnętrznych rezystorów 10kΩ)
 - GPIO 8-11, 16-17: Przekaźniki - bezpieczne piny (v1.5.0)
 - GPIO 3 (BTN_P7D): UART RX - zmienione z GPIO 1 (v1.5.0)
@@ -270,7 +301,7 @@ Enkoder PRIMARY → ESP32-S3
 ┌─────────┬──────────────┐
 │ CLK     │ GPIO 32      │
 │ DT      │ GPIO 33      │
-│ SW      │ GPIO 20      │ ← SELEKTOR MENU
+│ SW      │ GPIO 13      │ ✅ v1.6.4 FIX (było 20!)
 │ +       │ 3.3V         │
 │ GND     │ GND          │
 └─────────┴──────────────┘
@@ -278,7 +309,8 @@ Enkoder PRIMARY → ESP32-S3
 
 **Notatki**:
 - GPIO 32 używa przerwania sprzętowego (CHANGE)
-- SW (przycisk) jest selektorem menu (nie enkodera!)
+- SW (przycisk) na GPIO 13 (wolny po v1.5.0)
+- GPIO 20 to OSOBNY selektor menu (joystick SW)
 - Wbudowane pull-up rezystory ESP32 (INPUT_PULLUP)
 
 ---
@@ -293,9 +325,9 @@ Enkoder PRIMARY → ESP32-S3
 ```
 Enkoder BACKUP → ESP32-S3
 ┌─────────┬──────────────┐
-│ CLK     │ GPIO 6       │ ✅ NOWY
-│ DT      │ GPIO 7       │ ✅ NOWY
-│ SW      │ GPIO 19      │ ✅ Współdzielony z SPI_MISO
+│ CLK     │ GPIO 6       │ ✅ v1.6.0
+│ DT      │ GPIO 7       │ ✅ v1.6.0
+│ SW      │ GPIO 12      │ ✅ v1.6.4 FIX (było 19 - konflikt!)
 │ +       │ 3.3V         │
 │ GND     │ GND          │
 └─────────┴──────────────┘
@@ -303,7 +335,8 @@ Enkoder BACKUP → ESP32-S3
 
 **Notatki**:
 - GPIO 6 używa przerwania sprzętowego (CHANGE)
-- GPIO 19 współdzielony z SPI MISO (multiplexing przez software)
+- GPIO 12 bezpieczny pin (wolny po v1.5.0)
+- GPIO 19 jest SPI MISO (TFT + SD) - BEZ enkodera!
 - System automatycznie przełącza się na BACKUP przy awarii PRIMARY
 
 ---
