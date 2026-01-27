@@ -17,7 +17,7 @@
 #ifndef PATTERNS_H
 #define PATTERNS_H
 
-#include "config.h"
+#include "config_v140_NEW.h"  // BUGFIX v1.6.4: Zmiana z config.h (konflikt include guards!)
 
 // Rzeczywiste szerokości pistoletów (cm)
 #define GUN_WIDTH_12CM 4.0   // Pojedyncza dysza

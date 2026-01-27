@@ -7,7 +7,7 @@
 #define RELAY_CONTROLLER_H
 
 #include <Arduino.h>
-#include "config.h"
+#include "config_v140_NEW.h"  // BUGFIX v1.6.4: Zmiana z config.h (konflikt include guards!)
 
 class RelayController {
 private:

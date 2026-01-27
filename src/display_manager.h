@@ -8,7 +8,7 @@
 #define DISPLAY_MANAGER_H
 
 #include <TFT_eSPI.h>
-#include "config.h"
+#include "config_v140_NEW.h"  // BUGFIX v1.6.4: Zmiana z config.h (konflikt include guards!)
 #include "patterns.h"
 
 class DisplayManager {

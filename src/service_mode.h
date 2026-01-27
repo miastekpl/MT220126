@@ -14,7 +14,7 @@
 #define SERVICE_MODE_H
 
 #include <Arduino.h>
-#include "config.h"
+#include "config_v140_NEW.h"  // BUGFIX v1.6.4: Zmiana z config.h (konflikt include guards!)
 #include "display_manager.h"
 #include "relay_controller.h"
 #include "patterns.h"

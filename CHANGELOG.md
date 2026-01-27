@@ -34,22 +34,44 @@
    - Teraz: Flaga wyłączona, auto-detect + fallback ✅
    - Skutek: TFT Sprites automatycznie wyłączone jeśli brak PSRAM (tradycyjne renderowanie)
 
-5. **encoder_handler.h** - Konflikt include guards (dodatkowa poprawka)
+5. **encoder_handler.h** - Konflikt include guards (dodatkowa poprawka 1)
    - Było: `#include "config.h"` ❌ (ten sam guard co config_v140_NEW.h!)
    - Teraz: `#include "config_v140_NEW.h"` ✅
    - Skutek: ENCODER_SW_PIN i ENCODER_BACKUP_*_PIN teraz dostępne
    - Problem: Identyczny jak menu_system.h w v1.6.3!
 
-#### 📝 ZMODYFIKOWANE PLIKI:
+6. **WSZYSTKIE POZOSTAŁE PLIKI .h** - Masowe naprawy include guards! 🔥
+   - **relay_controller.h**: `config.h` → `config_v140_NEW.h` ✅
+   - **service_mode.h**: `config.h` → `config_v140_NEW.h` ✅
+   - **display_manager.h**: `config.h` → `config_v140_NEW.h` ✅
+   - **wifi_server.h**: `config.h` → `config_v140_NEW.h` ✅
+   - **calibration.h**: `config.h` → `config_v140_NEW.h` ✅
+   - **patterns.h**: `config.h` → `config_v140_NEW.h` ✅
+   - Razem: **8 plików** z konfliktem include guards! (menu_system.h + encoder_handler.h + 6 powyżej)
+   - Skutek: **WSZYSTKIE** piny GPIO teraz prawidłowo zdefiniowane!
+
+#### 📝 ZMODYFIKOWANE PLIKI (11 plików):
 - `src/config_v140_NEW.h`:
   - BTN_REVERSE_PIN: 4 → 14 (linia 77)
   - ENCODER_BACKUP_SW_PIN: 19 → 12 (linia 46)
 - `src/dual_encoder_manager.cpp`:
   - Używanie stałych z config zamiast hardcoded (linie 13, 16, 56-58)
 - `src/encoder_handler.h`:
-  - Zmiana include "config.h" → "config_v140_NEW.h" (linia 11) ✅ DODATKOWA POPRAWKA
+  - Zmiana include "config.h" → "config_v140_NEW.h" (linia 11)
+- `src/relay_controller.h`:
+  - Zmiana include "config.h" → "config_v140_NEW.h" (linia 10) ✅ NOWA POPRAWKA
+- `src/service_mode.h`:
+  - Zmiana include "config.h" → "config_v140_NEW.h" (linia 17) ✅ NOWA POPRAWKA
+- `src/display_manager.h`:
+  - Zmiana include "config.h" → "config_v140_NEW.h" (linia 11) ✅ NOWA POPRAWKA
+- `src/wifi_server.h`:
+  - Zmiana include "config.h" → "config_v140_NEW.h" (linia 23) ✅ NOWA POPRAWKA
+- `src/calibration.h`:
+  - Zmiana include "config.h" → "config_v140_NEW.h" (linia 11) ✅ NOWA POPRAWKA
+- `src/patterns.h`:
+  - Zmiana include "config.h" → "config_v140_NEW.h" (linia 20) ✅ NOWA POPRAWKA
 - `platformio.ini`:
-  - Wyłączono `-DBOARD_HAS_PSRAM` (linia 28 - zakomentowane)
+  - Wyłączono `-DBOARD_HAS_PSRAM` (linia 32 - zakomentowane)
   - Dodano instrukcje dla PSRAM (linie 12-14)
 - `src/main.cpp`: SOFTWARE_VERSION = "1.6.4"
 

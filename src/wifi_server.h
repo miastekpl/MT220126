@@ -20,7 +20,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
-#include "config.h"
+#include "config_v140_NEW.h"  // BUGFIX v1.6.4: Zmiana z config.h (konflikt include guards!)
 #include "patterns.h"
 
 // BUGFIX v1.6.2: Forward declarations dla RelayController i EncoderHandler
