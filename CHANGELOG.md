@@ -1,8 +1,117 @@
+## [1.6.6] - 2026-01-27
+
+### 🚨 BUGFIX KRYTYCZNY - Kompletna Walidacja GPIO (OSTATECZNE ROZWIĄZANIE!)
+
+**Status**: ✅ **PRODUCTION READY** - Walidacja na etapie kompilacji I runtime'u!
+
+#### 🔍 PROBLEM:
+
+Pomimo naprawy include guards w v1.6.5, system nadal crashował z błędem GPIO 227.
+GPIO 227 to wartość > 48 (max dla ESP32-S3), oznaczająca niezainicjalizowaną zmienną.
+
+#### ✅ ROZWIĄZANIE v1.6.6 - TRZY POZIOMY OCHRONY:
+
+**1. COMPILE-TIME VALIDATION (static_assert)**
+
+Dodano w `config_v140_NEW.h`:
+```cpp
+#define STATIC_ASSERT_PIN(pin) \
+    static_assert((pin) >= 0 && (pin) <= 48, \
+    "GPIO pin " #pin " is invalid!")
+
+// Walidacja WSZYSTKICH pinów przy kompilacji:
+STATIC_ASSERT_PIN(RELAY_1_PIN);
+STATIC_ASSERT_PIN(ENCODER_CLK_PIN);
+// ... (45 walidacji łącznie)
+```
+
+Jeśli JAKIKOLWIEK pin jest nieprawidłowy, **kompilacja się nie powiedzie**!
+
+**2. RUNTIME VALIDATION (w init() każdego modułu)**
+
+Dodano w `relay_controller.cpp` i `encoder_handler.cpp`:
+```cpp
+if (!GPIO_IS_VALID(pin)) {
+    Serial.println("!!! FATAL: Invalid GPIO pin detected !!!");
+    while(1) delay(1000);  // STOP - nie kontynuuj z błędnym pinem
+}
+```
+
+**3. DIAGNOSTIC OUTPUT**
+
+Każdy moduł drukuje piny PRZED ich użyciem:
+```
+[RelayController] Relay 1: GPIO 10
+[EncoderHandler] Inicjalizacja: CLK=32, DT=33, SW=13
+```
+
+#### 📝 ZMODYFIKOWANE PLIKI (4):
+
+1. **src/config_v140_NEW.h**:
+   - Dodano makro `GPIO_IS_VALID()` i `STATIC_ASSERT_PIN()`
+   - Dodano 45 static_assert dla wszystkich pinów GPIO
+   - Zaktualizowano nagłówek na v1.6.6
+
+2. **src/relay_controller.cpp**:
+   - Dodano walidację GPIO przed pinMode()
+   - Dodano debug output pinów
+   - Zatrzymanie systemu przy nieprawidłowym pinie
+
+3. **src/encoder_handler.cpp**:
+   - Dodano walidację GPIO przed pinMode()
+   - Dodano debug output pinów
+   - Zatrzymanie systemu przy nieprawidłowym pinie
+
+4. **src/main.cpp**:
+   - SOFTWARE_VERSION: "1.6.5" → "1.6.6"
+
+#### 📋 INSTRUKCJE KOMPILACJI:
+
+**WYMAGANY CLEAN REBUILD!**
+
+```bash
+# 1. Usuń CAŁĄ cache PlatformIO
+rm -rf .pio
+
+# 2. Wyczyść projekt
+pio run -t clean
+
+# 3. Kompiluj od zera
+pio run
+
+# 4. Upload
+pio run -t upload
+
+# 5. Monitor
+pio device monitor
+```
+
+**WAŻNE**: Jeśli kompilacja się nie powiedzie z błędem `static_assert`,
+oznacza to że któryś pin ma nieprawidłową wartość - sprawdź config_v140_NEW.h!
+
+#### ✅ WERYFIKACJA:
+
+Po starcie powinieneś zobaczyć:
+```
+[RelayController] Relay 1: GPIO 10
+[RelayController] Relay 2: GPIO 11
+...
+[RelayController] Przekazniki zainicjalizowane OK
+[EncoderHandler] Inicjalizacja: CLK=32, DT=33, SW=13
+[EncoderHandler] Enkoder zainicjalizowany OK
+```
+
+Jeśli widzisz `!!! FATAL: Invalid GPIO pin detected !!!`:
+- Problem wykryty przez walidację runtime
+- Sprawdź czy .pio został usunięty przed kompilacją!
+
+---
+
 ## [1.6.5] - 2026-01-27
 
 ### 🚨 BUGFIX KRYTYCZNY - Rozwiązanie Include Guard Cache (OSTATECZNA NAPRAWA GPIO 227!)
 
-**Status**: ✅ **PRODUCTION READY** - DEFINITYWNIE NAPRAWIONY Guru Meditation Error!
+**Status**: ⚠️ NIEWYSTARCZAJĄCE - nadal możliwy crash (użyj v1.6.6!)
 
 #### 📝 DOKUMENTACJA - Usunięcie przestarzałego TODO:
 

@@ -1,6 +1,6 @@
 /**
  * Implementacja obsługi enkodera
- * v1.4.2 - Dodano thread-safety (mutex locks)
+ * v1.6.6 - Dodano walidację GPIO pinów
  */
 
 #include "encoder_handler.h"
@@ -23,13 +23,26 @@ EncoderHandler::EncoderHandler(uint8_t clk, uint8_t dt, uint8_t sw) {
 }
 
 void EncoderHandler::init() {
+    DEBUG_PRINTF("[EncoderHandler] Inicjalizacja: CLK=%d, DT=%d, SW=%d\n", clkPin, dtPin, swPin);
+
+    // v1.6.6: Walidacja pinów PRZED użyciem pinMode
+    if (!GPIO_IS_VALID(clkPin) || !GPIO_IS_VALID(dtPin) || !GPIO_IS_VALID(swPin)) {
+        DEBUG_PRINTF("[EncoderHandler] BLAD KRYTYCZNY! Nieprawidlowy pin: CLK=%d DT=%d SW=%d (max %d)\n",
+                    clkPin, dtPin, swPin, GPIO_MAX_PIN);
+        // ZATRZYMAJ SYSTEM
+        while(1) {
+            Serial.println("!!! FATAL: Invalid encoder GPIO pin detected !!!");
+            delay(1000);
+        }
+    }
+
     pinMode(clkPin, INPUT_PULLUP);
     pinMode(dtPin, INPUT_PULLUP);
     pinMode(swPin, INPUT_PULLUP);
 
     aLastState = digitalRead(clkPin);
 
-    DEBUG_PRINTLN("Enkoder zainicjalizowany");
+    DEBUG_PRINTLN("[EncoderHandler] Enkoder zainicjalizowany OK");
 }
 
 void EncoderHandler::update() {

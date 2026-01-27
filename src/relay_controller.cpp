@@ -1,10 +1,12 @@
 /**
  * Implementacja kontrolera przekaźników
+ * v1.6.6 - Dodano walidację GPIO pinów
  */
 
 #include "relay_controller.h"
 
 RelayController::RelayController() {
+    // v1.6.6: Jawne przypisanie pinów
     relayPins[0] = RELAY_1_PIN;
     relayPins[1] = RELAY_2_PIN;
     relayPins[2] = RELAY_3_PIN;
@@ -18,12 +20,28 @@ RelayController::RelayController() {
 }
 
 void RelayController::init() {
+    DEBUG_PRINTLN("[RelayController] Inicjalizacja...");
+
+    // v1.6.6: Wydrukuj i zwaliduj piny PRZED użyciem pinMode
     for (int i = 0; i < 6; i++) {
+        DEBUG_PRINTF("[RelayController] Relay %d: GPIO %d\n", i + 1, relayPins[i]);
+
+        // Walidacja: sprawdź czy pin jest prawidłowy (0-48 dla ESP32-S3)
+        if (!GPIO_IS_VALID(relayPins[i])) {
+            DEBUG_PRINTF("[RelayController] BLAD KRYTYCZNY! GPIO %d jest nieprawidlowy! (max %d)\n",
+                        relayPins[i], GPIO_MAX_PIN);
+            // ZATRZYMAJ SYSTEM - nieprawidłowy pin oznacza błąd konfiguracji!
+            while(1) {
+                Serial.println("!!! FATAL: Invalid relay GPIO pin detected !!!");
+                delay(1000);
+            }
+        }
+
         pinMode(relayPins[i], OUTPUT);
-        digitalWrite(relayPins[i], LOW); // Przekaźniki wyłączone
+        digitalWrite(relayPins[i], LOW);
     }
 
-    DEBUG_PRINTLN("Przekazniki zainicjalizowane");
+    DEBUG_PRINTLN("[RelayController] Przekazniki zainicjalizowane OK");
 }
 
 void RelayController::setRelay(uint8_t relayNum, bool state) {

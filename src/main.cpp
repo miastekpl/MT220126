@@ -40,7 +40,7 @@
 #include "sd_card_manager.h"    // NOWE v1.6.0: SD Card logging
 
 // Wersja oprogramowania
-const char* SOFTWARE_VERSION = "1.6.5";  // BUGFIX v1.6.5: ROZWIĄZANE include guard cache - unikalny guard CONFIG_V140_NEW_H + stare pliki .bak
+const char* SOFTWARE_VERSION = "1.6.6";  // BUGFIX v1.6.6: Walidacja GPIO + static_assert + runtime validation
 const char* BUILD_DATE = __DATE__;
 const char* BUILD_TIME = __TIME__;
 

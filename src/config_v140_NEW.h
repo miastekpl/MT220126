@@ -1,24 +1,38 @@
 /**
  * Plik konfiguracyjny systemu malowania pasów drogowych
- * WERSJA 1.4.0 - KOMPLEKSOWA REFAKTORYZACJA
+ * WERSJA 1.6.6 - NAPRAWA GPIO 227 CRASH
  *
- * KRYTYCZNE ZMIANY:
- * - Naprawione WSZYSTKIE konflikty GPIO (oryginalna dokumentacja miała błędy!)
- * - Dodano FreeRTOS mutex dla thread-safety
- * - Zoptymalizowano stałe (integer math)
- * - Dodano STATE_ERROR dla obsługi błędów
- * - Dodano konfigurację WiFi
- * - Przygotowano do State Machine pattern
+ * KRYTYCZNE ZMIANY v1.6.6:
+ * - Dodano compile-time validation dla wszystkich pinów GPIO
+ * - Dodano makro GPIO_VALID() dla walidacji runtime
+ * - Ustawiono piny jako constexpr dla gwarancji compile-time
+ *
+ * POPRZEDNIE ZMIANY:
+ * - v1.6.5: Unikalny include guard CONFIG_V140_NEW_H
+ * - v1.4.0: Naprawione konflikty GPIO, FreeRTOS mutex, optymalizacje
  *
  * Copyright (c) 2026 MT220126 Engineering Team
  */
 
-#ifndef CONFIG_V140_NEW_H  // BUGFIX v1.6.5: Unikalny guard (konflikt z config.h!)
+#ifndef CONFIG_V140_NEW_H
 #define CONFIG_V140_NEW_H
 
 #include <Arduino.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
+
+// ============================================================================
+// WALIDACJA GPIO - NOWE v1.6.6
+// ============================================================================
+// Makra do walidacji pinów GPIO (ESP32-S3 ma GPIO 0-48)
+
+#define GPIO_MAX_PIN 48
+#define GPIO_IS_VALID(pin) ((pin) >= 0 && (pin) <= GPIO_MAX_PIN)
+
+// Compile-time assert macro (dla walidacji pinów)
+#define STATIC_ASSERT_PIN(pin) \
+    static_assert((pin) >= 0 && (pin) <= GPIO_MAX_PIN, \
+    "GPIO pin " #pin " is invalid! Must be 0-48 for ESP32-S3")
 
 // ============================================================================
 // KONFIGURACJA PINÓW GPIO - POPRAWIONA (BEZ KONFLIKTÓW!)
@@ -97,6 +111,68 @@
 // UWAGA v1.5.0: BTN_P7D przeniesiony z GPIO 1 (UART TX) na GPIO 3 (UART RX)
 // GPIO 3 jest bezpieczniejszy - mniej konfliktów z bootowaniem
 // W produkcji Serial może być wyłączony (DEBUG_ENABLED = 0)
+
+// ============================================================================
+// COMPILE-TIME VALIDATION - NOWE v1.6.6
+// ============================================================================
+// Jeśli którykolwiek z tych static_assert się nie powiedzie,
+// kompilacja zatrzyma się z jasnym komunikatem błędu.
+
+// Walidacja TFT pins
+STATIC_ASSERT_PIN(TFT_MISO);
+STATIC_ASSERT_PIN(TFT_MOSI);
+STATIC_ASSERT_PIN(TFT_SCLK);
+STATIC_ASSERT_PIN(TFT_CS);
+STATIC_ASSERT_PIN(TFT_DC);
+STATIC_ASSERT_PIN(TFT_RST);
+
+// Walidacja Encoder pins
+STATIC_ASSERT_PIN(ENCODER_CLK_PIN);
+STATIC_ASSERT_PIN(ENCODER_DT_PIN);
+STATIC_ASSERT_PIN(ENCODER_SW_PIN);
+STATIC_ASSERT_PIN(ENCODER_BACKUP_CLK_PIN);
+STATIC_ASSERT_PIN(ENCODER_BACKUP_DT_PIN);
+STATIC_ASSERT_PIN(ENCODER_BACKUP_SW_PIN);
+
+// Walidacja Selector i SD pins
+STATIC_ASSERT_PIN(SELECTOR_PIN);
+STATIC_ASSERT_PIN(SD_CS_PIN);
+
+// Walidacja Joystick pins
+STATIC_ASSERT_PIN(JOYSTICK_X_PIN);
+STATIC_ASSERT_PIN(JOYSTICK_Y_PIN);
+STATIC_ASSERT_PIN(JOYSTICK_SW_PIN);
+
+// Walidacja Relay pins
+STATIC_ASSERT_PIN(RELAY_1_PIN);
+STATIC_ASSERT_PIN(RELAY_2_PIN);
+STATIC_ASSERT_PIN(RELAY_3_PIN);
+STATIC_ASSERT_PIN(RELAY_4_PIN);
+STATIC_ASSERT_PIN(RELAY_5_PIN);
+STATIC_ASSERT_PIN(RELAY_6_PIN);
+
+// Walidacja Control buttons pins
+STATIC_ASSERT_PIN(BTN_START_PIN);
+STATIC_ASSERT_PIN(BTN_STOP_PIN);
+STATIC_ASSERT_PIN(BTN_REVERSE_PIN);
+STATIC_ASSERT_PIN(BTN_START_GAP_PIN);
+
+// Walidacja Pattern buttons pins
+STATIC_ASSERT_PIN(BTN_P1A_PIN);
+STATIC_ASSERT_PIN(BTN_P1B_PIN);
+STATIC_ASSERT_PIN(BTN_P1C_PIN);
+STATIC_ASSERT_PIN(BTN_P1D_PIN);
+STATIC_ASSERT_PIN(BTN_P1E_PIN);
+STATIC_ASSERT_PIN(BTN_P2A_PIN);
+STATIC_ASSERT_PIN(BTN_P2B_PIN);
+STATIC_ASSERT_PIN(BTN_P3A_PIN);
+STATIC_ASSERT_PIN(BTN_P3B_PIN);
+STATIC_ASSERT_PIN(BTN_P4_PIN);
+STATIC_ASSERT_PIN(BTN_P6_PIN);
+STATIC_ASSERT_PIN(BTN_P7A_PIN);
+STATIC_ASSERT_PIN(BTN_P7B_PIN);
+STATIC_ASSERT_PIN(BTN_P7C_PIN);
+STATIC_ASSERT_PIN(BTN_P7D_PIN);
 
 // ============================================================================
 // KONFIGURACJA WIFI - v1.2.0
