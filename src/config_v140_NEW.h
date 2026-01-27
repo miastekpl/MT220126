@@ -37,6 +37,7 @@
 // Enkoder KY-040 PRIMARY (TYLKO DO POMIARÓW - NIE DO MENU!)
 #define ENCODER_CLK_PIN 32  // Z przerwaniem (INT)
 #define ENCODER_DT_PIN  33  // Data
+#define ENCODER_SW_PIN  13  // Przycisk primary enkodera (bugfix v1.6.1) - GPIO 13 wolny po v1.5.0
 
 // v1.6.0: Enkoder KY-040 BACKUP (redundancja!)
 // Drugi enkoder dla zwiększenia niezawodności - automatyczne przełączanie przy awarii
@@ -57,6 +58,7 @@
 // Joystick analogowy (tylko osie - przycisk to selektor)
 #define JOYSTICK_X_PIN  34  // ADC1 (input-only)
 #define JOYSTICK_Y_PIN  35  // ADC1 (input-only)
+#define JOYSTICK_SW_PIN 20  // Przycisk joysticka (alias SELECTOR_PIN) - bugfix v1.6.1
 
 // Przekaźniki (6 pistoletów malarskich) - NAPRAWIONE v1.5.0
 // KRYTYCZNA ZMIANA: GPIO 12-15 są strapping pins!

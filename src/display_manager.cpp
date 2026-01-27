@@ -50,15 +50,16 @@ void DisplayManager::initSprites() {
     distanceSprite = new TFT_eSprite(tft);
     statusSprite = new TFT_eSprite(tft);
 
-    // Tworzenie buforów sprite'ów
+    // Tworzenie buforów sprite'ów w PSRAM
     // Rozmiary: szerokość x wysokość (piksele)
+    // createSprite() zwraca void* (wskaźnik do bufora) lub nullptr przy błędzie
     bool success = true;
 
-    success &= patternSprite->createSprite(130, 100);   // Pattern box
-    success &= speedSprite->createSprite(170, 100);     // Speed box
-    success &= areaSprite->createSprite(310, 90);       // Area box
-    success &= distanceSprite->createSprite(200, 25);   // Distance box
-    success &= statusSprite->createSprite(320, 25);     // Status bar
+    success = success && (patternSprite->createSprite(130, 100) != nullptr);   // Pattern box
+    success = success && (speedSprite->createSprite(170, 100) != nullptr);     // Speed box
+    success = success && (areaSprite->createSprite(310, 90) != nullptr);       // Area box
+    success = success && (distanceSprite->createSprite(200, 25) != nullptr);   // Distance box
+    success = success && (statusSprite->createSprite(320, 25) != nullptr);     // Status bar
 
     if (success) {
         spritesEnabled = true;

@@ -1,3 +1,52 @@
+## [1.6.1] - 2026-01-27
+
+### 🔧 BUGFIX RELEASE - Naprawione Błędy Kompilacji
+
+**Status**: ✅ **PRODUCTION READY** - Kompiluje się bez błędów!
+
+#### 🐛 NAPRAWIONE BŁĘDY:
+
+1. **display_manager.cpp** - `createSprite()` błąd typu
+   - Problem: `createSprite()` zwraca `void*`, nie `bool`
+   - Rozwiązanie: Zmiana na `success && (sprite->createSprite(...) != nullptr)`
+
+2. **main.cpp** - Błędna kolejność deklaracji obiektów
+   - Problem: `eventLogger` użyty przed zadeklarowaniem
+   - Rozwiązanie: Przeniesienie `eventLogger` przed `dualEncoder`
+
+3. **main.cpp** - Brak forward declaration
+   - Problem: `handlePatternChange()` wywołane przed definicją
+   - Rozwiązanie: Dodano `void handlePatternChange(PatternType);`
+
+4. **main.cpp** - Użycie nieistniejącego obiektu
+   - Problem: `encoder.resetDistance()` zamiast `dualEncoder`
+   - Rozwiązanie: Zamiana na `dualEncoder.resetDistance()`
+
+5. **sd_card_manager.h** - Brak deklaracji metody
+   - Problem: `getEventTypeName()` nie zadeklarowana w nagłówku
+   - Rozwiązanie: Dodano `const char* getEventTypeName(EventType);`
+
+6. **config_v140_NEW.h** - Brakujące piny GPIO
+   - Problem: `ENCODER_SW_PIN` i `JOYSTICK_SW_PIN` niezdefiniowane
+   - Rozwiązanie: 
+     - `ENCODER_SW_PIN = 13` (GPIO wolny po v1.5.0)
+     - `JOYSTICK_SW_PIN = 20` (alias dla SELECTOR_PIN)
+
+7. **Stare pliki backup** - Powodowały błędy kompilacji
+   - Usunięto: `main_OLD.cpp`, `main_backup_v130.cpp`, `main_v130_OLD.cpp`
+
+#### 📝 ZMODYFIKOWANE PLIKI:
+- `src/main.cpp` - Poprawki deklaracji i forward declarations
+- `src/display_manager.cpp` - Naprawa createSprite()
+- `src/sd_card_manager.h` - Dodanie getEventTypeName()
+- `src/config_v140_NEW.h` - Dodanie ENCODER_SW_PIN i JOYSTICK_SW_PIN
+
+#### ⚠️ UWAGA:
+Ta wersja to **hotfix** dla v1.6.0 - naprawia tylko błędy kompilacji.
+Wszystkie funkcje v1.6.0 (Dual Encoder, SD Logging, TFT Sprites) działają bez zmian.
+
+---
+
 ## [1.6.0] - 2026-01-26
 
 ### 🚀 DUAL ENCODER + SD LOGGING + TFT SPRITES

@@ -1,12 +1,23 @@
-# System Sterowania Malowaniem Pasów Drogowych v1.6.0
+# System Sterowania Malowaniem Pasów Drogowych v1.6.1
 
 ## 📋 Opis Projektu
 
 Profesjonalny system sterowania malowaniem pasów drogowych wykorzystujący ESP32-S3 z obsługą 6 pistoletów malarskich sterowanych przekaźnikami. System umożliwia automatyczne malowanie zgodnie z normami drogowymi.
 
-**Status**: ✅ **PRODUCTION READY** - Naprawione GPIO strapping pins! (v1.6.0)
+**Status**: ✅ **PRODUCTION READY** - Bugfix release v1.6.1 (kompiluje się bez błędów!)
 
-## 🚨 CO NOWEGO W v1.6.0 - KRYTYCZNE NAPRAWY GPIO!
+## 🔧 CO NOWEGO W v1.6.1 - BUGFIX RELEASE!
+
+### Naprawione Błędy Kompilacji
+- ✅ **display_manager.cpp**: Naprawiono `createSprite()` - sprawdzanie `!= nullptr`
+- ✅ **main.cpp**: Poprawiona kolejność deklaracji (`eventLogger` przed `dualEncoder`)
+- ✅ **main.cpp**: Dodano forward declaration `handlePatternChange()`
+- ✅ **main.cpp**: Zamieniono `encoder` na `dualEncoder`
+- ✅ **sd_card_manager.h**: Dodano deklarację `getEventTypeName()`
+- ✅ **config.h**: Dodano `ENCODER_SW_PIN` (GPIO 13) i `JOYSTICK_SW_PIN` (GPIO 20)
+- ✅ **Usunięto**: Stare pliki backup (`main_OLD.cpp`, `main_backup_v130.cpp`, `main_v130_OLD.cpp`)
+
+## 🚀 CO JEST W v1.6.0 - PRZEŁOMOWA WERSJA!
 
 **Status**: ✅ **PRODUCTION READY** - WSZYSTKIE krytyczne problemy naprawione!
 

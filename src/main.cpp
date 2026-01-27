@@ -40,7 +40,7 @@
 #include "sd_card_manager.h"    // NOWE v1.6.0: SD Card logging
 
 // Wersja oprogramowania
-const char* SOFTWARE_VERSION = "1.6.0";  // ZMIANA v1.6.0: Dual Encoder + SD Logging + TFT Sprites
+const char* SOFTWARE_VERSION = "1.6.1";  // BUGFIX v1.6.1: Naprawione błędy kompilacji
 const char* BUILD_DATE = __DATE__;
 const char* BUILD_TIME = __TIME__;
 
@@ -52,23 +52,19 @@ SemaphoreHandle_t encoderMutex = NULL;
 // Obiekty globalne
 TFT_eSPI tft = TFT_eSPI();
 DisplayManager display(&tft);
+EventLogger eventLogger;  // NOWE v1.5.0: System logowania zdarzeń (musi być przed DualEncoder!)
 DualEncoderManager dualEncoder(&eventLogger);  // ZMIANA v1.6.0: Dual Encoder zamiast pojedynczego
+SDCardManager sdCard(&eventLogger);  // NOWE v1.6.0: SD Card Manager
 RelayController relays;
 MenuSystem menu(&display, dualEncoder.getPrimaryEncoder());  // Menu używa primary encoder
 CalibrationManager calibration(dualEncoder.getPrimaryEncoder());  // Kalibracja używa primary
 ServiceMode serviceMode(&display, &relays);  // NOWE v1.4.1: Tryb serwisowy
-EventLogger eventLogger;  // NOWE v1.5.0: System logowania zdarzeń
-SDCardManager sdCard(&eventLogger);  // NOWE v1.6.0: SD Card Manager
 
 // Zmienne stanu systemu
 SystemState systemState;
 volatile bool interruptFlag = false;
 
-// NOWE v1.4.0: Struktura dla przycisków wzorców (refaktoryzacja)
-struct PatternButton {
-    uint8_t pin;
-    PatternType pattern;
-};
+// UWAGA: PatternButton jest już zdefiniowany w config_v140_NEW.h (nie duplikować!)
 
 // NOWE v1.4.0: Tablica mapowania przycisków na wzorce (zamiast 76 linii if-ów)
 const PatternButton PATTERN_BUTTONS[] PROGMEM = {
@@ -169,6 +165,9 @@ void initJoystick() {
     pinMode(JOYSTICK_Y_PIN, INPUT);
     pinMode(SELECTOR_PIN, INPUT_PULLUP);  // NOWY: Dedykowany przycisk selektora
 }
+
+// Forward declaration - funkcja zdefiniowana poniżej (bugfix v1.6.1)
+void handlePatternChange(PatternType newPattern);
 
 /**
  * PRZEPISANA FUNKCJA v1.4.0: Sprawdzanie wciśniętych przycisków wzorców
@@ -335,7 +334,7 @@ void checkControlButtons() {
             // Nie resetuj distance gdy Start Gap jest aktywny
             if (!systemState.startFromGap) {
                 systemState.distance = 0;
-                encoder.resetDistance();
+                dualEncoder.resetDistance();  // FIX v1.6.1: Użyj dualEncoder zamiast encoder
             } else {
                 // Start Gap aktywny - nie resetuj distance
                 DEBUG_PRINTLN("START GAP: Distance nie zresetowany");
@@ -669,7 +668,7 @@ void loop() {
         } else if (result == MENU_MEASURE_START) {
             systemState.state = STATE_MEASURING;
             systemState.distance = 0;
-            encoder.resetDistance();
+            dualEncoder.resetDistance();  // FIX v1.6.1: Użyj dualEncoder zamiast encoder
         } else if (result == MENU_SERVICE_START) {
             // NOWE v1.4.1: Wejście do trybu serwisowego
             systemState.state = STATE_SERVICE;

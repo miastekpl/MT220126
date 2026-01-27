@@ -117,6 +117,11 @@ private:
      */
     bool writeEventToCSV(const LogEvent& event);
 
+    /**
+     * Konwersja EventType na string (bugfix v1.6.1)
+     */
+    const char* getEventTypeName(EventType type);
+
 public:
     /**
      * Konstruktor
