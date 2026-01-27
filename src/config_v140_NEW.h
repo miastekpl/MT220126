@@ -13,8 +13,8 @@
  * Copyright (c) 2026 MT220126 Engineering Team
  */
 
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef CONFIG_V140_NEW_H  // BUGFIX v1.6.5: Unikalny guard (konflikt z config.h!)
+#define CONFIG_V140_NEW_H
 
 #include <Arduino.h>
 #include <freertos/FreeRTOS.h>
@@ -362,4 +362,4 @@ struct LogEvent {
     const char* message;     // Krótki komunikat
 };
 
-#endif // CONFIG_H
+#endif // CONFIG_V140_NEW_H

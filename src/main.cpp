@@ -40,7 +40,7 @@
 #include "sd_card_manager.h"    // NOWE v1.6.0: SD Card logging
 
 // Wersja oprogramowania
-const char* SOFTWARE_VERSION = "1.6.4";  // BUGFIX v1.6.4: Naprawione WSZYSTKIE konflikty include guards (8 plików!)
+const char* SOFTWARE_VERSION = "1.6.5";  // BUGFIX v1.6.5: ROZWIĄZANE include guard cache - unikalny guard CONFIG_V140_NEW_H + stare pliki .bak
 const char* BUILD_DATE = __DATE__;
 const char* BUILD_TIME = __TIME__;
 
@@ -503,6 +503,16 @@ void setup() {
     Serial.printf("Wersja: %s\n", SOFTWARE_VERSION);
     Serial.printf("Build: %s %s\n", BUILD_DATE, BUILD_TIME);
     Serial.println("=================================\n");
+
+    // DEBUG v1.6.5: Wyświetlanie wartości GPIO (diagnoza GPIO 227)
+    Serial.println("--- DEBUG GPIO PINS ---");
+    Serial.printf("ENCODER PRIMARY: CLK=%d DT=%d SW=%d\n", ENCODER_CLK_PIN, ENCODER_DT_PIN, ENCODER_SW_PIN);
+    Serial.printf("ENCODER BACKUP:  CLK=%d DT=%d SW=%d\n", ENCODER_BACKUP_CLK_PIN, ENCODER_BACKUP_DT_PIN, ENCODER_BACKUP_SW_PIN);
+    Serial.printf("RELAY PINS: R1=%d R2=%d R3=%d R4=%d R5=%d R6=%d\n", RELAY_1_PIN, RELAY_2_PIN, RELAY_3_PIN, RELAY_4_PIN, RELAY_5_PIN, RELAY_6_PIN);
+    Serial.printf("BUTTONS: REVERSE=%d START=%d STOP=%d\n", BTN_REVERSE_PIN, BTN_START_PIN, BTN_STOP_PIN);
+    Serial.printf("TFT: MISO=%d MOSI=%d SCLK=%d CS=%d DC=%d RST=%d\n", TFT_MISO, TFT_MOSI, TFT_SCLK, TFT_CS, TFT_DC, TFT_RST);
+    Serial.printf("SD CARD: MISO=%d MOSI=%d SCLK=%d CS=%d\n", SD_MISO, SD_MOSI, SD_SCK, SD_CS_PIN);
+    Serial.println("--- END GPIO DEBUG ---\n");
 
     // NOWE v1.4.0: Inicjalizacja mutexów FreeRTOS
     Serial.println("Inicjalizacja mutexów...");
