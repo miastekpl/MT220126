@@ -13,12 +13,17 @@ Profesjonalny system sterowania malowaniem pasów drogowych wykorzystujący ESP3
 - ✅ **GPIO 19 KONFLIKT**: ENCODER_BACKUP_SW przepięty 19 → 12 (konfliktował z SPI MISO!)
 - ✅ **DualEncoderManager**: Hardcoded piny → używa stałych z config_v140_NEW.h
 - ✅ **PSRAM**: Wyłączona wymuszona flaga `-DBOARD_HAS_PSRAM` (auto-detect + fallback)
+- ✅ **8 PLIKÓW .h**: Naprawione WSZYSTKIE konflikty include guards!
+  - menu_system.h, encoder_handler.h, relay_controller.h, service_mode.h
+  - display_manager.h, wifi_server.h, calibration.h, patterns.h
+  - **Przyczyna crashu**: Stary `config.h` miał ten sam guard co `config_v140_NEW.h` (CONFIG_H)
+  - **Skutek**: Preprocessor ignorował config_v140_NEW.h, piny miały śmieciowe wartości → GPIO 227 error!
 
 ### ⚠️ WYMAGANE ZMIANY HARDWARE (jeśli masz prototyp v1.6.0-v1.6.3):
 1. **Przycisk REVERSE**: Przepnij z GPIO 4 na GPIO 14
 2. **BACKUP ENCODER SW**: Przepnij z GPIO 19 na GPIO 12
 
-### WSZYSTKIE crashe i błędy kompilacji naprawione! 🎉
+### WSZYSTKIE crashe i błędy kompilacji naprawione! 🎉🔥
 
 ## 🔧 CO BYŁO W v1.6.2 - BUGFIX RELEASE
 
