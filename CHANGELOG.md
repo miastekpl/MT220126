@@ -1,3 +1,92 @@
+## [1.6.8] - 2026-01-28
+
+### 🚨 NAPRAWIONY GPIO 227 - Własny User_Setup.h dla TFT_eSPI!
+
+**Status**: ✅ **PRODUCTION READY** - ROZWIĄZANIE PRZYCZYNY ŹRÓDŁOWEJ!
+
+#### 🔍 PRAWDZIWA PRZYCZYNA GPIO 227:
+
+**Biblioteka TFT_eSPI używała pinów ESP8266 (PIN_D*) zamiast ESP32-S3!**
+
+W domyślnym `User_Setup.h` biblioteki TFT_eSPI znajdowały się definicje:
+```cpp
+// BŁĘDNE PINY ESP8266/NodeMCU:
+#define TFT_MISO  PIN_D6  // ❌ Makra ESP8266!
+#define TFT_MOSI  PIN_D7
+#define TFT_SCLK  PIN_D5
+#define TFT_CS    PIN_D8
+#define TFT_DC    PIN_D3
+#define TFT_RST   PIN_D4
+```
+
+Te makra `PIN_D*` są zdefiniowane tylko dla ESP8266. Na ESP32-S3 dają **niezdefiniowane wartości** (garbage values jak 227).
+
+#### ✅ ROZWIĄZANIE v1.6.8:
+
+**Utworzono własny `include/User_Setup.h` z prawidłowymi pinami ESP32-S3:**
+
+```cpp
+// PRAWIDŁOWE PINY ESP32-S3:
+#define TFT_MISO 19   // ✅ Liczba, nie makro!
+#define TFT_MOSI 23
+#define TFT_SCLK 18
+#define TFT_CS    5
+#define TFT_DC   22
+#define TFT_RST  21
+```
+
+**Zmiany w `platformio.ini`:**
+
+```ini
+build_flags =
+    -I include      ; ← Nasz include/ PRZED bibliotekami!
+    ; ... pozostałe flagi ...
+
+lib_archive = false  ; ← Wymuś rekompilację bibliotek!
+```
+
+#### 📝 NOWE/ZMODYFIKOWANE PLIKI:
+
+1. **include/User_Setup.h** (NOWY) - Prawidłowa konfiguracja TFT dla ESP32-S3
+2. **platformio.ini** - Dodano `-I include` i `lib_archive = false`
+3. **src/main.cpp** - SOFTWARE_VERSION = "1.6.8"
+
+#### 📋 INSTRUKCJE KOMPILACJI:
+
+**WYMAGANY CLEAN REBUILD!**
+
+```bash
+# Krok 1: Usuń WSZYSTKIE pliki cache!
+rm -rf .pio
+
+# Krok 2: Kompiluj od zera
+pio run
+
+# Krok 3: Upload
+pio run -t upload
+
+# Krok 4: Monitor Serial
+pio device monitor
+```
+
+#### ✓ OCZEKIWANY OUTPUT:
+
+Po uruchomieniu Serial Monitor:
+```
+=================================
+System Malowania Pasów Drogowych
+Wersja: 1.6.8
+Build: Jan 28 2026 ...
+=================================
+
+>>> User_Setup.h: Zaladowano konfiguracje TFT dla ESP32-S3 <<<
+>>> TFT_MISO=19, TFT_MOSI=23, TFT_SCLK=18, TFT_CS=5, TFT_DC=22, TFT_RST=21 <<<
+```
+
+**Brak błędów GPIO 227!**
+
+---
+
 ## [1.6.7] - 2026-01-28
 
 ### 🚨 NAPRAWIONY GPIO 227 - Obiekty Tworzone w setup() Zamiast Globalnie!

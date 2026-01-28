@@ -40,7 +40,7 @@
 #include "sd_card_manager.h"    // NOWE v1.6.0: SD Card logging
 
 // Wersja oprogramowania
-const char* SOFTWARE_VERSION = "1.6.7";  // v1.6.7: NAPRAWIONY GPIO 227 - obiekty tworzone w setup() zamiast globalnie!
+const char* SOFTWARE_VERSION = "1.6.8";  // v1.6.8: FIX GPIO 227 - własny User_Setup.h dla TFT_eSPI (prawidłowe piny ESP32-S3)
 const char* BUILD_DATE = __DATE__;
 const char* BUILD_TIME = __TIME__;
 

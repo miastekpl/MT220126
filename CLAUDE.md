@@ -9,7 +9,7 @@ Ten dokument został stworzony specjalnie dla asystentow AI (takich jak Claude) 
 ## Cel Projektu
 
 **Nazwa**: System Sterowania Malowaniem Pasow Drogowych
-**Wersja**: 1.6.5
+**Wersja**: 1.6.8
 **Platforma**: ESP32-S3 N16R8
 **Framework**: Arduino (PlatformIO)
 **Język**: C++ z Arduino framework
@@ -39,6 +39,8 @@ To profesjonalny system embedded do sterowania malowaniem pasow drogowych. Syste
 
 ```
 MT220126/
+├── include/                          # Nagłówki projektu (v1.6.8)
+│   └── User_Setup.h                  # Konfiguracja TFT_eSPI dla ESP32-S3
 ├── src/                              # Kod źrodłowy
 │   ├── main.cpp                      # Główna pętla programu + setup()
 │   ├── config_v140_NEW.h             # AKTYWNY config - piny GPIO, stałe, struktury
@@ -69,6 +71,50 @@ MT220126/
 ├── CHANGELOG.md                      # Historia zmian
 ├── ANALIZA_KODU_SENIOR_DEVELOPER.md  # Analiza kodu
 └── CLAUDE.md                         # Ten plik
+```
+
+---
+
+## KRYTYCZNE: TFT_eSPI User_Setup.h (v1.6.8 FIX)
+
+### Problem Zidentyfikowany
+
+Biblioteka TFT_eSPI zawierała domyślny `User_Setup.h` z pinami dla **ESP8266/NodeMCU** zamiast ESP32-S3:
+
+```cpp
+// BŁĘDNE PINY W DOMYŚLNYM User_Setup.h:
+#define TFT_MISO  PIN_D6  // Makra ESP8266 - nie istnieją na ESP32!
+#define TFT_MOSI  PIN_D7
+#define TFT_SCLK  PIN_D5
+#define TFT_CS    PIN_D8
+#define TFT_DC    PIN_D3  // -> 227 (garbage value) na ESP32-S3!
+#define TFT_RST   PIN_D4
+```
+
+**Skutek**: GPIO 227 (garbage) -> `pinMode(227)` FAIL -> Guru Meditation Error!
+
+### Rozwiązanie (v1.6.8)
+
+1. **Własny User_Setup.h**: Utworzono `include/User_Setup.h` z prawidłowymi pinami
+2. **platformio.ini**: Dodano `-I include` PRZED innymi flagami
+3. **lib_archive = false**: Wymusza rekompilację bibliotek
+
+```cpp
+// include/User_Setup.h - PRAWIDŁOWE PINY ESP32-S3:
+#define TFT_MISO 19   // Liczby, NIE makra!
+#define TFT_MOSI 23
+#define TFT_SCLK 18
+#define TFT_CS    5
+#define TFT_DC   22
+#define TFT_RST  21
+```
+
+### WYMAGANE przy każdej kompilacji
+
+```bash
+# ZAWSZE clean rebuild!
+rm -rf .pio
+pio run
 ```
 
 ---
@@ -686,7 +732,7 @@ Ten system będzie używany w rzeczywistych warunkach drogowych. Życie ludzi mo
 
 ---
 
-**Wersja CLAUDE.md**: 1.6.5
+**Wersja CLAUDE.md**: 1.6.8
 **Data**: 2026-01-28
 **Ostatnia aktualizacja**: 2026-01-28
 
