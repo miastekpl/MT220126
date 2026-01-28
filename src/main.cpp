@@ -40,7 +40,7 @@
 #include "sd_card_manager.h"    // NOWE v1.6.0: SD Card logging
 
 // Wersja oprogramowania
-const char* SOFTWARE_VERSION = "1.6.5";  // BUGFIX v1.6.5: ROZWIĄZANE include guard cache - unikalny guard CONFIG_V140_NEW_H + stare pliki .bak
+const char* SOFTWARE_VERSION = "1.6.6";  // v1.6.6: Compile-time GPIO validation + runtime check + blokada starego CONFIG_H
 const char* BUILD_DATE = __DATE__;
 const char* BUILD_TIME = __TIME__;
 
@@ -498,21 +498,27 @@ void updateDisplay() {
  */
 void setup() {
     Serial.begin(115200);
+    delay(100);  // v1.6.6: Daj czas na inicjalizację Serial
+
     Serial.println("\n\n=================================");
     Serial.println("System Malowania Pasów Drogowych");
     Serial.printf("Wersja: %s\n", SOFTWARE_VERSION);
     Serial.printf("Build: %s %s\n", BUILD_DATE, BUILD_TIME);
     Serial.println("=================================\n");
 
-    // DEBUG v1.6.5: Wyświetlanie wartości GPIO (diagnoza GPIO 227)
-    Serial.println("--- DEBUG GPIO PINS ---");
-    Serial.printf("ENCODER PRIMARY: CLK=%d DT=%d SW=%d\n", ENCODER_CLK_PIN, ENCODER_DT_PIN, ENCODER_SW_PIN);
-    Serial.printf("ENCODER BACKUP:  CLK=%d DT=%d SW=%d\n", ENCODER_BACKUP_CLK_PIN, ENCODER_BACKUP_DT_PIN, ENCODER_BACKUP_SW_PIN);
-    Serial.printf("RELAY PINS: R1=%d R2=%d R3=%d R4=%d R5=%d R6=%d\n", RELAY_1_PIN, RELAY_2_PIN, RELAY_3_PIN, RELAY_4_PIN, RELAY_5_PIN, RELAY_6_PIN);
-    Serial.printf("BUTTONS: REVERSE=%d START=%d STOP=%d\n", BTN_REVERSE_PIN, BTN_START_PIN, BTN_STOP_PIN);
-    Serial.printf("TFT: MISO=%d MOSI=%d SCLK=%d CS=%d DC=%d RST=%d\n", TFT_MISO, TFT_MOSI, TFT_SCLK, TFT_CS, TFT_DC, TFT_RST);
-    Serial.printf("SD CARD: MISO=%d MOSI=%d SCLK=%d CS=%d\n", SD_MISO_PIN, SD_MOSI_PIN, SD_SCK_PIN, SD_CS_PIN);
-    Serial.println("--- END GPIO DEBUG ---\n");
+    // v1.6.6: KRYTYCZNA WALIDACJA GPIO NA POCZĄTKU!
+    // Jeśli piny są nieprawidłowe (np. 227), system się zatrzyma
+    if (!validateGPIOPins()) {
+        Serial.println("\n!!! SYSTEM ZATRZYMANY !!!");
+        Serial.println("Nieprawidlowe piny GPIO wykryte.");
+        Serial.println("Napraw problem i wgraj ponownie firmware.");
+
+        // Miganie LED lub inna sygnalizacja błędu
+        while(true) {
+            delay(1000);
+            Serial.println("BLAD GPIO - System zablokowany. Wykonaj clean rebuild!");
+        }
+    }
 
     // NOWE v1.4.0: Inicjalizacja mutexów FreeRTOS
     Serial.println("Inicjalizacja mutexów...");

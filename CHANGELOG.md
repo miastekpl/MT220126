@@ -1,3 +1,119 @@
+## [1.6.6] - 2026-01-28
+
+### 🚨 NAPRAWIONY GPIO 227 - Compile-Time + Runtime Verification
+
+**Status**: ✅ **PRODUCTION READY** - Wielopoziomowa ochrona przed błędami GPIO!
+
+#### 🔍 PROBLEM:
+
+Pomimo napraw w v1.6.5, niektórzy użytkownicy nadal doświadczali błędu GPIO 227.
+Przyczyną były **stare pliki w cache PlatformIO** lub **nieusuniętý plik config.h**.
+
+#### ✅ ROZWIĄZANIA v1.6.6 (3 poziomy ochrony):
+
+**1. COMPILE-TIME BLOCKER** (`#ifdef CONFIG_H`):
+```cpp
+// config_v140_NEW.h - linia 22-24:
+#ifdef CONFIG_H
+    #error "BLAD KRYTYCZNY: Wykryto stary CONFIG_H! Usun plik config.h i folder .pio!"
+#endif
+```
+→ Jeśli stary config.h został załadowany, kompilacja **NATYCHMIAST SIĘ ZATRZYMA** z jasnym komunikatem!
+
+**2. COMPILE-TIME GPIO VALIDATION** (`static_assert`):
+```cpp
+// config_v140_NEW.h - linie 380-402:
+#define VALIDATE_GPIO_PIN(pin) \
+    static_assert((pin) >= 0 && (pin) <= 48, "GPIO poza zakresem!")
+
+VALIDATE_GPIO_PIN(RELAY_1_PIN);
+VALIDATE_GPIO_PIN(RELAY_2_PIN);
+// ... wszystkie piny
+```
+→ Jeśli JAKIKOLWIEK pin ma wartość > 48 (np. 227), kompilacja **NIE PRZEJDZIE**!
+
+**3. RUNTIME VALIDATION** (`validateGPIOPins()`):
+```cpp
+// main.cpp setup() - linie 509-521:
+if (!validateGPIOPins()) {
+    while(true) {
+        Serial.println("BLAD GPIO - System zablokowany!");
+        delay(1000);
+    }
+}
+```
+→ Nawet gdyby coś przeszło kompilację, runtime check **ZABLOKUJE SYSTEM** i wyświetli jasne instrukcje naprawy!
+
+#### 📝 ZMODYFIKOWANE PLIKI (2):
+
+1. **src/config_v140_NEW.h**:
+   - Dodano `#ifdef CONFIG_H #error` blocker (linie 22-24)
+   - Dodano `ESP32S3_MAX_GPIO = 48` (linia 32)
+   - Dodano `VALIDATE_GPIO_PIN()` macro (linie 380-383)
+   - Dodano `static_assert` dla 16 pinów (linie 385-402)
+   - Dodano funkcję `validateGPIOPins()` (linie 404-455)
+
+2. **src/main.cpp**:
+   - Wersja: "1.6.5" → "1.6.6"
+   - Dodano `delay(100)` po Serial.begin (linia 501)
+   - Dodano wywołanie `validateGPIOPins()` na początku setup() (linie 509-521)
+   - Usunięto stary debug GPIO (zastąpiony przez validateGPIOPins)
+
+#### 🗑️ USUNIĘTE PLIKI:
+- `src/config_DEPRECATED_DO_NOT_USE.h.bak` - całkowicie usunięty
+- `src/config_v130_DEPRECATED.h.bak` - całkowicie usunięty
+
+(Pliki backup usunięte aby uniknąć jakichkolwiek pomyłek)
+
+#### 📋 INSTRUKCJE KOMPILACJI (WAŻNE!):
+
+**Dla Windows (PowerShell):**
+```powershell
+# Krok 1: Usuń folder .pio
+Remove-Item -Recurse -Force .pio
+
+# Krok 2: Usuń plik config.h jeśli istnieje!
+Remove-Item -Force src/config.h -ErrorAction SilentlyContinue
+
+# Krok 3: Clean build
+pio run -t clean
+pio run
+
+# Krok 4: Upload
+pio run -t upload
+```
+
+**Dla Linux/Mac:**
+```bash
+rm -rf .pio
+rm -f src/config.h
+pio run -t clean
+pio run
+pio run -t upload
+```
+
+#### ✓ OCZEKIWANY OUTPUT:
+
+Po uruchomieniu w Serial Monitor powinno pojawić się:
+```
+=================================
+System Malowania Pasów Drogowych
+Wersja: 1.6.6
+Build: Jan 28 2026 ...
+=================================
+
+=== v1.6.6 GPIO VALIDATION ===
+GPIO VALIDATION: OK - Wszystkie piny poprawne
+  RELAY PINS: 10 11 8 9 16 17
+  PRIMARY ENC: CLK=32 DT=33 SW=13
+  BACKUP ENC:  CLK=6 DT=7 SW=12
+=== END GPIO VALIDATION ===
+```
+
+Jeśli widzisz "BLAD KRYTYCZNY" lub system się zawiesza - wykonaj ponownie kroki 1-4!
+
+---
+
 ## [1.6.5] - 2026-01-27
 
 ### 🚨 BUGFIX KRYTYCZNY - Rozwiązanie Include Guard Cache (OSTATECZNA NAPRAWA GPIO 227!)

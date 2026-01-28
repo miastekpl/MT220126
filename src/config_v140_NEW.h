@@ -1,24 +1,35 @@
 /**
  * Plik konfiguracyjny systemu malowania pasów drogowych
- * WERSJA 1.4.0 - KOMPLEKSOWA REFAKTORYZACJA
+ * WERSJA 1.6.6 - KRYTYCZNA NAPRAWA GPIO
  *
- * KRYTYCZNE ZMIANY:
- * - Naprawione WSZYSTKIE konflikty GPIO (oryginalna dokumentacja miała błędy!)
- * - Dodano FreeRTOS mutex dla thread-safety
- * - Zoptymalizowano stałe (integer math)
- * - Dodano STATE_ERROR dla obsługi błędów
- * - Dodano konfigurację WiFi
- * - Przygotowano do State Machine pattern
+ * KRYTYCZNE ZMIANY v1.6.6:
+ * - Dodano compile-time verification GPIO (static_assert)
+ * - Dodano runtime verification w validateGPIOPins()
+ * - Blokada kompilacji jeśli wykryto stary CONFIG_H guard
+ *
+ * POPRZEDNIE ZMIANY:
+ * - v1.6.5: Unikalny include guard CONFIG_V140_NEW_H
+ * - v1.6.4: Naprawa konfliktów GPIO (REVERSE=14, BACKUP_SW=12)
+ * - Naprawione WSZYSTKIE konflikty GPIO
+ * - FreeRTOS mutex dla thread-safety
  *
  * Copyright (c) 2026 MT220126 Engineering Team
  */
 
-#ifndef CONFIG_V140_NEW_H  // BUGFIX v1.6.5: Unikalny guard (konflikt z config.h!)
+#ifndef CONFIG_V140_NEW_H
 #define CONFIG_V140_NEW_H
+
+// v1.6.6: BLOKADA jeśli stary config.h został załadowany!
+#ifdef CONFIG_H
+    #error "BLAD KRYTYCZNY: Wykryto stary CONFIG_H! Usun plik config.h i folder .pio, potem zrob clean rebuild!"
+#endif
 
 #include <Arduino.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
+
+// v1.6.6: Maksymalny numer GPIO dla ESP32-S3
+#define ESP32S3_MAX_GPIO 48
 
 // ============================================================================
 // KONFIGURACJA PINÓW GPIO - POPRAWIONA (BEZ KONFLIKTÓW!)
@@ -361,5 +372,86 @@ struct LogEvent {
     uint16_t data2;          // Opcjonalne dane
     const char* message;     // Krótki komunikat
 };
+
+// ============================================================================
+// v1.6.6: WALIDACJA GPIO - COMPILE-TIME I RUNTIME
+// ============================================================================
+
+// Compile-time sprawdzenie czy pin jest w zakresie ESP32-S3 (0-48)
+#define VALIDATE_GPIO_PIN(pin) \
+    static_assert((pin) >= 0 && (pin) <= ESP32S3_MAX_GPIO, \
+    "GPIO pin " #pin " jest poza zakresem ESP32-S3 (0-48)!")
+
+// v1.6.6: Compile-time walidacja WSZYSTKICH pinów GPIO
+// Jeśli którykolwiek pin ma wartość > 48 (np. 227), kompilacja się nie powiedzie!
+VALIDATE_GPIO_PIN(RELAY_1_PIN);
+VALIDATE_GPIO_PIN(RELAY_2_PIN);
+VALIDATE_GPIO_PIN(RELAY_3_PIN);
+VALIDATE_GPIO_PIN(RELAY_4_PIN);
+VALIDATE_GPIO_PIN(RELAY_5_PIN);
+VALIDATE_GPIO_PIN(RELAY_6_PIN);
+VALIDATE_GPIO_PIN(ENCODER_CLK_PIN);
+VALIDATE_GPIO_PIN(ENCODER_DT_PIN);
+VALIDATE_GPIO_PIN(ENCODER_SW_PIN);
+VALIDATE_GPIO_PIN(ENCODER_BACKUP_CLK_PIN);
+VALIDATE_GPIO_PIN(ENCODER_BACKUP_DT_PIN);
+VALIDATE_GPIO_PIN(ENCODER_BACKUP_SW_PIN);
+VALIDATE_GPIO_PIN(BTN_START_PIN);
+VALIDATE_GPIO_PIN(BTN_STOP_PIN);
+VALIDATE_GPIO_PIN(BTN_REVERSE_PIN);
+VALIDATE_GPIO_PIN(SD_CS_PIN);
+
+/**
+ * v1.6.6: Runtime walidacja GPIO - wywołaj na początku setup()!
+ * Zwraca true jeśli wszystkie piny są poprawne, false jeśli wykryto błąd.
+ * W przypadku błędu wyświetla szczegóły przez Serial.
+ */
+inline bool validateGPIOPins() {
+    bool allValid = true;
+
+    Serial.println("\n=== v1.6.6 GPIO VALIDATION ===");
+
+    // Sprawdź przekaźniki
+    const uint8_t relayPins[] = {RELAY_1_PIN, RELAY_2_PIN, RELAY_3_PIN, RELAY_4_PIN, RELAY_5_PIN, RELAY_6_PIN};
+    for (int i = 0; i < 6; i++) {
+        if (relayPins[i] > ESP32S3_MAX_GPIO) {
+            Serial.printf("BLAD KRYTYCZNY: RELAY_%d_PIN = %d (>48)!\n", i+1, relayPins[i]);
+            allValid = false;
+        }
+    }
+
+    // Sprawdź enkodery
+    if (ENCODER_CLK_PIN > ESP32S3_MAX_GPIO || ENCODER_DT_PIN > ESP32S3_MAX_GPIO || ENCODER_SW_PIN > ESP32S3_MAX_GPIO) {
+        Serial.printf("BLAD KRYTYCZNY: PRIMARY ENCODER pins invalid! CLK=%d DT=%d SW=%d\n",
+                     ENCODER_CLK_PIN, ENCODER_DT_PIN, ENCODER_SW_PIN);
+        allValid = false;
+    }
+    if (ENCODER_BACKUP_CLK_PIN > ESP32S3_MAX_GPIO || ENCODER_BACKUP_DT_PIN > ESP32S3_MAX_GPIO || ENCODER_BACKUP_SW_PIN > ESP32S3_MAX_GPIO) {
+        Serial.printf("BLAD KRYTYCZNY: BACKUP ENCODER pins invalid! CLK=%d DT=%d SW=%d\n",
+                     ENCODER_BACKUP_CLK_PIN, ENCODER_BACKUP_DT_PIN, ENCODER_BACKUP_SW_PIN);
+        allValid = false;
+    }
+
+    if (allValid) {
+        Serial.println("GPIO VALIDATION: OK - Wszystkie piny poprawne");
+        Serial.printf("  RELAY PINS: %d %d %d %d %d %d\n", RELAY_1_PIN, RELAY_2_PIN, RELAY_3_PIN, RELAY_4_PIN, RELAY_5_PIN, RELAY_6_PIN);
+        Serial.printf("  PRIMARY ENC: CLK=%d DT=%d SW=%d\n", ENCODER_CLK_PIN, ENCODER_DT_PIN, ENCODER_SW_PIN);
+        Serial.printf("  BACKUP ENC:  CLK=%d DT=%d SW=%d\n", ENCODER_BACKUP_CLK_PIN, ENCODER_BACKUP_DT_PIN, ENCODER_BACKUP_SW_PIN);
+    } else {
+        Serial.println("\n!!! BLAD KRYTYCZNY !!!");
+        Serial.println("Wykryto nieprawidlowe numery GPIO (>48).");
+        Serial.println("Prawdopodobna przyczyna: stary plik config.h w projekcie.");
+        Serial.println("");
+        Serial.println("ROZWIAZANIE:");
+        Serial.println("1. Usun plik config.h z folderu src/");
+        Serial.println("2. Usun folder .pio/");
+        Serial.println("3. Wykonaj: pio run -t clean");
+        Serial.println("4. Wykonaj: pio run");
+        Serial.println("");
+    }
+    Serial.println("=== END GPIO VALIDATION ===\n");
+
+    return allValid;
+}
 
 #endif // CONFIG_V140_NEW_H
