@@ -1,3 +1,38 @@
+## [1.6.7] - 2026-01-28
+
+### 🚨 NAPRAWIONY GPIO 227 - Obiekty Tworzone w setup() Zamiast Globalnie!
+
+**Status**: ✅ **PRODUCTION READY** - DEFINITYWNE ROZWIĄZANIE!
+
+#### 🔍 PRAWDZIWA PRZYCZYNA GPIO 227:
+
+**Konstruktory globalnych obiektów wykonują się PRZED setup()!**
+
+Biblioteka TFT_eSPI lub inne obiekty wywoływały `pinMode()` w konstruktorach
+ZANIM system był zainicjalizowany → GPIO 227 (garbage value) → crash!
+
+#### ✅ ROZWIĄZANIE v1.6.7:
+
+**Zmiana architektury na POINTERY + tworzenie w setup():**
+
+```cpp
+// BYŁO (v1.6.0-v1.6.6) - BŁĘDNE:
+TFT_eSPI tft = TFT_eSPI();  // Konstruktor PRZED setup()!
+
+// TERAZ (v1.6.7) - POPRAWNE:
+TFT_eSPI* tft = nullptr;    // Tylko pointer
+void setup() {
+    tft = new TFT_eSPI();   // Tworzenie PO walidacji GPIO!
+}
+```
+
+#### 📝 ZMIANY:
+- Wszystkie obiekty jako pointery (nullptr)
+- Tworzenie obiektów w setup() po validateGPIOPins()
+- Odwołania zmienione z `.` na `->`
+
+---
+
 ## [1.6.6] - 2026-01-28
 
 ### 🚨 NAPRAWIONY GPIO 227 - Compile-Time + Runtime Verification

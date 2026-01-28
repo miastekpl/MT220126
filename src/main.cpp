@@ -40,7 +40,7 @@
 #include "sd_card_manager.h"    // NOWE v1.6.0: SD Card logging
 
 // Wersja oprogramowania
-const char* SOFTWARE_VERSION = "1.6.6";  // v1.6.6: Compile-time GPIO validation + runtime check + blokada starego CONFIG_H
+const char* SOFTWARE_VERSION = "1.6.7";  // v1.6.7: NAPRAWIONY GPIO 227 - obiekty tworzone w setup() zamiast globalnie!
 const char* BUILD_DATE = __DATE__;
 const char* BUILD_TIME = __TIME__;
 
@@ -49,16 +49,18 @@ const char* BUILD_TIME = __TIME__;
 SemaphoreHandle_t stateMutex = NULL;
 SemaphoreHandle_t encoderMutex = NULL;
 
-// Obiekty globalne
-TFT_eSPI tft = TFT_eSPI();
-DisplayManager display(&tft);
-EventLogger eventLogger;  // NOWE v1.5.0: System logowania zdarzeń (musi być przed DualEncoder!)
-DualEncoderManager dualEncoder(&eventLogger);  // ZMIANA v1.6.0: Dual Encoder zamiast pojedynczego
-SDCardManager sdCard(&eventLogger);  // NOWE v1.6.0: SD Card Manager
-RelayController relays;
-MenuSystem menu(&display, dualEncoder.getPrimaryEncoder());  // Menu używa primary encoder
-CalibrationManager calibration(dualEncoder.getPrimaryEncoder());  // Kalibracja używa primary
-ServiceMode serviceMode(&display, &relays);  // NOWE v1.4.1: Tryb serwisowy
+// v1.6.7: KRYTYCZNA ZMIANA - Obiekty jako POINTERY, tworzone w setup()!
+// Problem: Konstruktory globalne wykonują się PRZED setup() i mogą używać niezainicjalizowanych pinów GPIO
+// Rozwiązanie: Używamy pointerów (nullptr) i tworzymy obiekty dopiero w setup()
+TFT_eSPI* tft = nullptr;
+DisplayManager* display = nullptr;
+EventLogger* eventLogger = nullptr;
+DualEncoderManager* dualEncoder = nullptr;
+SDCardManager* sdCard = nullptr;
+RelayController* relays = nullptr;
+MenuSystem* menu = nullptr;
+CalibrationManager* calibration = nullptr;
+ServiceMode* serviceMode = nullptr;
 
 // Zmienne stanu systemu
 SystemState systemState;
@@ -95,7 +97,7 @@ bool isSafeToActivateGuns() {
         // v1.5.0: Loguj tylko co 5 sekund (nie spamuj logów)
         static unsigned long lastSafetyLog = 0;
         if (millis() - lastSafetyLog > 5000) {
-            eventLogger.log(EVENT_SAFETY_TRIGGERED, (uint16_t)(systemState.speed * 10), 1, "Blokada: predkosc za niska");
+            eventLogger->log(EVENT_SAFETY_TRIGGERED, (uint16_t)(systemState.speed * 10), 1, "Blokada: predkosc za niska");
             lastSafetyLog = millis();
         }
         return false;
@@ -112,7 +114,7 @@ bool isSafeToActivateGuns() {
             // v1.5.0: Loguj tylko raz (unikaj spamu)
             static bool movementLoggedOnce = false;
             if (!movementLoggedOnce) {
-                eventLogger.log(EVENT_SAFETY_TRIGGERED, 0, 2, "Blokada: brak ruchu enkodera");
+                eventLogger->log(EVENT_SAFETY_TRIGGERED, 0, 2, "Blokada: brak ruchu enkodera");
                 movementLoggedOnce = true;
             }
             return false;
@@ -204,7 +206,7 @@ void handlePatternChange(PatternType newPattern) {
     if (!pattern) return;
 
     // NOWE v1.5.0: Logowanie zmiany wzorca
-    eventLogger.log(EVENT_PATTERN_CHANGED, systemState.currentPattern, newPattern, pattern->name);
+    eventLogger->log(EVENT_PATTERN_CHANGED, systemState.currentPattern, newPattern, pattern->name);
 
     // Zapisz dystans w momencie zmiany wzorca
     systemState.patternStartDistance = systemState.distance;
@@ -290,18 +292,18 @@ void checkControlButtons() {
                 systemState.lastMovementTime = millis();
                 systemState.lastDistance = systemState.distance;
                 DEBUG_PRINTLN("START MALOWANIA");
-                eventLogger.log(EVENT_STATE_CHANGED, STATE_IDLE, STATE_PAINTING, "START malowania");  // v1.5.0
+                eventLogger->log(EVENT_STATE_CHANGED, STATE_IDLE, STATE_PAINTING, "START malowania");  // v1.5.0
                 lastStartRelease = millis();
             } else if (systemState.state == STATE_PAINTING) {
                 systemState.state = STATE_PAUSED;
                 DEBUG_PRINTLN("PAUZA");
-                eventLogger.log(EVENT_STATE_CHANGED, STATE_PAINTING, STATE_PAUSED, "PAUZA");  // v1.5.0
+                eventLogger->log(EVENT_STATE_CHANGED, STATE_PAINTING, STATE_PAUSED, "PAUZA");  // v1.5.0
                 lastStartRelease = millis();
             } else if (systemState.state == STATE_PAUSED) {
                 systemState.state = STATE_PAINTING;
                 systemState.lastMovementTime = millis();
                 DEBUG_PRINTLN("WZNOWIENIE");
-                eventLogger.log(EVENT_STATE_CHANGED, STATE_PAUSED, STATE_PAINTING, "WZNOWIENIE");  // v1.5.0
+                eventLogger->log(EVENT_STATE_CHANGED, STATE_PAUSED, STATE_PAINTING, "WZNOWIENIE");  // v1.5.0
                 lastStartRelease = millis();
             }
         }
@@ -317,24 +319,24 @@ void checkControlButtons() {
         if (millis() - stopPressTime > 1000 && systemState.state != STATE_MENU) {
             // Długie przytrzymanie - wejście do menu
             systemState.state = STATE_MENU;
-            menu.show();
+            menu->show();
             stopPressed = false;
             DEBUG_PRINTLN("WEJSCIE DO MENU");
-            eventLogger.log(EVENT_STATE_CHANGED, 0, STATE_MENU, "Wejscie do MENU");  // v1.5.0
+            eventLogger->log(EVENT_STATE_CHANGED, 0, STATE_MENU, "Wejscie do MENU");  // v1.5.0
         }
     } else {
         if (stopPressed && millis() - stopPressTime < 1000) {
             // Krótkie naciśnięcie - stop
             systemState.state = STATE_IDLE;
-            relays.stopAll();
+            relays->stopAll();
             systemState.totalPaintedArea = 0;
-            eventLogger.log(EVENT_STATE_CHANGED, 0, STATE_IDLE, "STOP - Reset licznikow");  // v1.5.0
+            eventLogger->log(EVENT_STATE_CHANGED, 0, STATE_IDLE, "STOP - Reset licznikow");  // v1.5.0
 
             // NAPRAWA v1.4.0: START GAP BUG
             // Nie resetuj distance gdy Start Gap jest aktywny
             if (!systemState.startFromGap) {
                 systemState.distance = 0;
-                dualEncoder.resetDistance();  // FIX v1.6.1: Użyj dualEncoder zamiast encoder
+                dualEncoder->resetDistance();  // FIX v1.6.1: Użyj dualEncoder zamiast encoder
             } else {
                 // Start Gap aktywny - nie resetuj distance
                 DEBUG_PRINTLN("START GAP: Distance nie zresetowany");
@@ -388,14 +390,14 @@ void calculatePaintedArea() {
 void processPainting() {
     // Jeśli nie malujemy - wyłącz wszystko
     if (systemState.state != STATE_PAINTING) {
-        relays.stopAll();
+        relays->stopAll();
         systemState.safetyLocked = false;
         return;
     }
 
     // KRYTYCZNE: Sprawdzenie bezpieczeństwa
     if (!isSafeToActivateGuns()) {
-        relays.stopAll();
+        relays->stopAll();
         systemState.safetyLocked = true;
         return;
     }
@@ -405,7 +407,7 @@ void processPainting() {
     // Pobierz wzorzec
     Pattern* pattern = getPattern(systemState.currentPattern);
     if (!pattern) {
-        relays.stopAll();
+        relays->stopAll();
         DEBUG_PRINTLN("BLAD: Nieznany wzorzec!");
         return;
     }
@@ -418,7 +420,7 @@ void processPainting() {
     if (pattern->lineLength <= 0) {
         // Ciągłe malowanie - włącz aktywne pistolety
         for (int i = 0; i < 6; i++) {
-            relays.setRelay(i + 1, activeGuns[i]);
+            relays->setRelay(i + 1, activeGuns[i]);
         }
         return;
     }
@@ -432,7 +434,7 @@ void processPainting() {
 
     // Jeśli wciąż w fazie offsetu (przerwy), nie maluj
     if (effectiveDistanceCm < 0) {
-        relays.stopAll();
+        relays->stopAll();
         return;
     }
 
@@ -460,11 +462,11 @@ void processPainting() {
     if (shouldPaint) {
         // Jesteśmy w linii - włącz aktywne pistolety
         for (int i = 0; i < 6; i++) {
-            relays.setRelay(i + 1, activeGuns[i]);
+            relays->setRelay(i + 1, activeGuns[i]);
         }
     } else {
         // Jesteśmy w przerwie - wyłącz wszystko
-        relays.stopAll();
+        relays->stopAll();
     }
 }
 
@@ -476,7 +478,7 @@ void updateDisplay() {
         return; // Menu zarządza swoim wyświetlaczem
     }
 
-    display.showMainScreen(
+    display->showMainScreen(
         systemState.currentPattern,
         systemState.speed,
         systemState.totalPaintedArea,
@@ -530,6 +532,22 @@ void setup() {
     }
     Serial.println("Mutexy utworzone (thread-safety aktywny)");
 
+    // v1.6.7: KRYTYCZNE - Tworzenie obiektów TUTAJ, nie globalnie!
+    // To rozwiązuje problem GPIO 227 - konstruktory wykonują się PO walidacji GPIO
+    Serial.println("Tworzenie obiektów systemowych...");
+
+    tft = new TFT_eSPI();
+    eventLogger = new EventLogger();
+    display = new DisplayManager(tft);
+    dualEncoder = new DualEncoderManager(eventLogger);
+    sdCard = new SDCardManager(eventLogger);
+    relays = new RelayController();
+    menu = new MenuSystem(display, dualEncoder->getPrimaryEncoder());
+    calibration = new CalibrationManager(dualEncoder->getPrimaryEncoder());
+    serviceMode = new ServiceMode(display, relays);
+
+    Serial.println("Obiekty utworzone pomyslnie!");
+
     // NOWE v1.3.0: Watchdog timer (10 sekund)
     Serial.println("Inicjalizacja watchdog timer...");
     esp_task_wdt_init(10, true);  // 10 sekund timeout, panic on timeout
@@ -538,22 +556,22 @@ void setup() {
 
     // Inicjalizacja wyświetlacza
     Serial.println("Inicjalizacja wyświetlacza...");
-    tft.init();
-    tft.setRotation(1); // Landscape
-    display.init();
-    display.showSplashScreen(SOFTWARE_VERSION);
+    tft->init();
+    tft->setRotation(1); // Landscape
+    display->init();
+    display->showSplashScreen(SOFTWARE_VERSION);
     delay(2000);
 
     // Inicjalizacja dual enkodera (v1.6.0 - redundancja!)
     Serial.println("Inicjalizacja DUAL ENCODER...");
-    dualEncoder.init();
+    dualEncoder->init();
     attachInterrupt(digitalPinToInterrupt(ENCODER_CLK_PIN), encoderISR, CHANGE);
     attachInterrupt(digitalPinToInterrupt(ENCODER_BACKUP_CLK_PIN), encoderISR, CHANGE);  // v1.6.0: Backup encoder
 
     // Inicjalizacja przekaźników
     Serial.println("Inicjalizacja przekaźników...");
-    relays.init();
-    relays.testSequence();
+    relays->init();
+    relays->testSequence();
 
     // Inicjalizacja przycisków
     Serial.println("Inicjalizacja przycisków...");
@@ -562,35 +580,35 @@ void setup() {
 
     // Inicjalizacja systemu menu
     Serial.println("Inicjalizacja menu...");
-    menu.init();
+    menu->init();
 
     // Inicjalizacja kalibracji
     Serial.println("Inicjalizacja kalibracji...");
-    calibration.init();
+    calibration->init();
 
     // NOWE v1.4.1: Inicjalizacja trybu serwisowego
     Serial.println("Inicjalizacja trybu serwisowego...");
-    serviceMode.init();
+    serviceMode->init();
 
     // NOWE v1.5.0: Inicjalizacja Event Loggera
     Serial.println("Inicjalizacja Event Loggera...");
-    eventLogger.init();
-    eventLogger.log(EVENT_SYSTEM_START, 0, 0, "System uruchomiony");
+    eventLogger->init();
+    eventLogger->log(EVENT_SYSTEM_START, 0, 0, "System uruchomiony");
 
     // NOWE v1.6.0: Inicjalizacja SD Card
     Serial.println("Inicjalizacja SD Card...");
-    if (sdCard.init()) {
+    if (sdCard->init()) {
         Serial.println("SD Card zainicjalizowana (auto-zapis aktywny)");
-        eventLogger.log(EVENT_SYSTEM_START, 0, 0, "SD Card: OK");
+        eventLogger->log(EVENT_SYSTEM_START, 0, 0, "SD Card: OK");
     } else {
         Serial.println("UWAGA: SD Card niedostępna (logi tylko w RAM)");
-        eventLogger.log(EVENT_ERROR_OCCURRED, 0, 0, "SD Card: Niedostepna");
+        eventLogger->log(EVENT_ERROR_OCCURRED, 0, 0, "SD Card: Niedostepna");
     }
 
     // Sprawdzenie kalibracji
-    if (!calibration.isCalibrated()) {
+    if (!calibration->isCalibrated()) {
         Serial.println("UWAGA: System wymaga kalibracji!");
-        display.showWarning("WYMAGANA KALIBRACJA!", "Przytrzymaj STOP aby wejsc do menu");
+        display->showWarning("WYMAGANA KALIBRACJA!", "Przytrzymaj STOP aby wejsc do menu");
         delay(3000);
     }
 
@@ -618,7 +636,7 @@ void setup() {
     Serial.printf("Timeout ruchu: %d ms\n\n", MOVEMENT_TIMEOUT_MS);
 
     // Pokazanie głównego ekranu
-    display.showMainScreen(
+    display->showMainScreen(
         systemState.currentPattern,
         systemState.speed,
         systemState.totalPaintedArea,
@@ -641,10 +659,10 @@ void loop() {
 
     // Obsługa dual enkodera (co 10ms) - v1.6.0
     if (currentTime - lastEncoderUpdate >= 10) {
-        dualEncoder.update();  // v1.6.0: Aktualizacja obu enkoderów + sprawdzanie spójności
+        dualEncoder->update();  // v1.6.0: Aktualizacja obu enkoderów + sprawdzanie spójności
 
         if (systemState.state == STATE_PAINTING || systemState.state == STATE_MEASURING) {
-            long newDistance = dualEncoder.getDistance();  // v1.6.0: Z aktywnego enkodera
+            long newDistance = dualEncoder->getDistance();  // v1.6.0: Z aktywnego enkodera
             if (newDistance != systemState.distance) {
                 // NAPRAWA v1.4.2: Zapisz stary dystans PRZED zmianą
                 long oldDistance = systemState.distance;
@@ -664,7 +682,7 @@ void loop() {
     }
 
     // v1.6.0: Automatyczny zapis logów na SD Card
-    sdCard.update();
+    sdCard->update();
 
     // Sprawdzanie przycisków
     checkPatternButtons();
@@ -674,32 +692,32 @@ void loop() {
 
     // Obsługa menu
     if (systemState.state == STATE_MENU) {
-        MenuResult result = menu.update();
+        MenuResult result = menu->update();
         if (result == MENU_EXIT) {
             systemState.state = STATE_IDLE;
             updateDisplay();
         } else if (result == MENU_CALIBRATION_START) {
             systemState.state = STATE_CALIBRATING;
-            eventLogger.log(EVENT_CALIBRATION_START, 0, 0, "Kalibracja rozpoczeta");  // v1.5.0
+            eventLogger->log(EVENT_CALIBRATION_START, 0, 0, "Kalibracja rozpoczeta");  // v1.5.0
         } else if (result == MENU_MEASURE_START) {
             systemState.state = STATE_MEASURING;
             systemState.distance = 0;
-            dualEncoder.resetDistance();  // FIX v1.6.1: Użyj dualEncoder zamiast encoder
+            dualEncoder->resetDistance();  // FIX v1.6.1: Użyj dualEncoder zamiast encoder
         } else if (result == MENU_SERVICE_START) {
             // NOWE v1.4.1: Wejście do trybu serwisowego
             systemState.state = STATE_SERVICE;
-            serviceMode.show();
+            serviceMode->show();
             DEBUG_PRINTLN("Wejscie do trybu serwisowego");
         }
     }
 
     // Obsługa kalibracji
     if (systemState.state == STATE_CALIBRATING) {
-        CalibrationResult result = calibration.process();
+        CalibrationResult result = calibration->process();
         if (result == CALIBRATION_COMPLETE) {
             systemState.state = STATE_IDLE;
-            display.showSuccess("Kalibracja zakonczona!");
-            eventLogger.log(EVENT_CALIBRATION_COMPLETE, 0, 0, "Kalibracja ukonczona");  // v1.5.0
+            display->showSuccess("Kalibracja zakonczona!");
+            eventLogger->log(EVENT_CALIBRATION_COMPLETE, 0, 0, "Kalibracja ukonczona");  // v1.5.0
             delay(2000);
             updateDisplay();
         } else if (result == CALIBRATION_CANCELLED) {
@@ -710,12 +728,12 @@ void loop() {
 
     // NOWE v1.4.1: Obsługa trybu serwisowego
     if (systemState.state == STATE_SERVICE) {
-        serviceMode.update();
+        serviceMode->update();
 
         // Sprawdzanie przycisków wzorców (umożliwia zmianę wzorca w trybie serwisowym)
         checkPatternButtons();
         if (systemState.patternChanged) {
-            serviceMode.setPattern(systemState.currentPattern);
+            serviceMode->setPattern(systemState.currentPattern);
             systemState.patternChanged = false;
         }
 
@@ -730,7 +748,7 @@ void loop() {
             } else if (millis() - stopPressTime >= 2000) {
                 // Długie przyciśnięcie - wyjście z serwisu
                 systemState.state = STATE_IDLE;
-                serviceMode.hide();
+                serviceMode->hide();
                 updateDisplay();
                 DEBUG_PRINTLN("Wyjscie z trybu serwisowego");
                 stopPressed = false;
