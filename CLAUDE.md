@@ -1,15 +1,15 @@
-# CLAUDE.md - Przewodnik dla Asystentów AI
+# CLAUDE.md - Przewodnik dla Asystentow AI
 
-## 📋 Przegląd
+## Przegląd
 
-Ten dokument został stworzony specjalnie dla asystentów AI (takich jak Claude) w celu ułatwienia zrozumienia struktury projektu, konwencji kodowania oraz przepływu pracy. Przeczytaj ten plik przed rozpoczęciem jakichkolwiek modyfikacji w projekcie.
+Ten dokument został stworzony specjalnie dla asystentow AI (takich jak Claude) w celu ułatwienia zrozumienia struktury projektu, konwencji kodowania oraz przepływu pracy. Przeczytaj ten plik przed rozpoczęciem jakichkolwiek modyfikacji w projekcie.
 
 ---
 
-## 🎯 Cel Projektu
+## Cel Projektu
 
-**Nazwa**: System Sterowania Malowaniem Pasów Drogowych
-**Wersja**: 1.0.0
+**Nazwa**: System Sterowania Malowaniem Pasow Drogowych
+**Wersja**: 1.6.5
 **Platforma**: ESP32-S3 N16R8
 **Framework**: Arduino (PlatformIO)
 **Język**: C++ z Arduino framework
@@ -17,91 +17,173 @@ Ten dokument został stworzony specjalnie dla asystentów AI (takich jak Claude)
 
 ### Czym jest ten projekt?
 
-To profesjonalny system embedded do sterowania malowaniem pasów drogowych. System kontroluje 6 pistoletów malarskich i implementuje 15 wzorców malowania zgodnych z polskimi normami drogowymi.
+To profesjonalny system embedded do sterowania malowaniem pasow drogowych. System kontroluje 6 pistoletow malarskich i implementuje 15 wzorcow malowania zgodnych z polskimi normami drogowymi.
 
 ### Główne Funkcjonalności
 
-1. **Sterowanie wzorcami malowania** - 15 predefiniowanych wzorców (P-1a do P-7d)
+1. **Sterowanie wzorcami malowania** - 15 predefiniowanych wzorcow (P-1a do P-7d)
 2. **Kalibracja enkodera** - precyzyjny pomiar odległości (±1cm)
-3. **Interfejs użytkownika** - TFT 320x240 z intuicyjnym UI
-4. **Menu systemowe** - nawigacja joystickiem
-5. **Zmiana "w locie"** - możliwość zmiany wzorca podczas malowania
-6. **Odwracanie wzorców** - P-3a i P-3b mogą być odwrócone
+3. **Dual Encoder** - redundancja z automatycznym przełączaniem (v1.6.0)
+4. **Interfejs użytkownika** - TFT 320x240 z intuicyjnym UI (TFT Sprites opcjonalne)
+5. **Menu systemowe** - nawigacja joystickiem
+6. **Zmiana "w locie"** - możliwość zmiany wzorca podczas malowania
+7. **Odwracanie wzorcow** - P-3a i P-3b mogą być odwrocone
+8. **WiFi AP + REST API** - zdalne sterowanie (192.168.4.1) (v1.4.0)
+9. **Tryb serwisowy** - czyszczenie pistoletow (hold-to-fire) (v1.4.1)
+10. **Event Logger** - logowanie zdarzeń systemowych (v1.5.0)
+11. **SD Card Logging** - zapis logow na kartę SD (v1.6.0)
 
 ---
 
-## 📁 Struktura Projektu
+## Struktura Projektu
 
 ```
 MT220126/
-├── src/                          # Kod źródłowy
-│   ├── main.cpp                  # Główna pętla programu + setup()
-│   ├── config.h                  # Piny GPIO, stałe, struktury
-│   ├── patterns.h                # Definicje wzorców malowania
-│   ├── display_manager.h/.cpp    # Klasa DisplayManager
-│   ├── encoder_handler.h/.cpp    # Klasa EncoderHandler
-│   ├── relay_controller.h/.cpp   # Klasa RelayController
-│   ├── menu_system.h/.cpp        # Klasa MenuSystem
-│   └── calibration.h/.cpp        # Klasa CalibrationManager
-├── docs/                         # Dokumentacja
+├── src/                              # Kod źrodłowy
+│   ├── main.cpp                      # Główna pętla programu + setup()
+│   ├── config_v140_NEW.h             # AKTYWNY config - piny GPIO, stałe, struktury
+│   ├── patterns.h                    # Definicje wzorcow malowania
+│   ├── display_manager.h/.cpp        # Klasa DisplayManager (TFT + Sprites)
+│   ├── encoder_handler.h/.cpp        # Klasa EncoderHandler
+│   ├── dual_encoder_manager.h/.cpp   # Klasa DualEncoderManager (redundancja) [v1.6.0]
+│   ├── relay_controller.h/.cpp       # Klasa RelayController
+│   ├── menu_system.h/.cpp            # Klasa MenuSystem
+│   ├── calibration.h/.cpp            # Klasa CalibrationManager
+│   ├── service_mode.h/.cpp           # Klasa ServiceMode [v1.4.1]
+│   ├── event_logger.h/.cpp           # Klasa EventLogger [v1.5.0]
+│   ├── sd_card_manager.h/.cpp        # Klasa SDCardManager [v1.6.0]
+│   ├── wifi_server.h/.cpp            # Klasa WiFiServerManager [v1.4.0]
+│   ├── state_machine.h               # Przygotowanie State Pattern [v1.4.0]
+│   ├── config_DEPRECATED_DO_NOT_USE.h.bak  # STARY config - NIE UŻYWAĆ!
+│   └── config_v130_DEPRECATED.h.bak        # BARDZO STARY - NIE UŻYWAĆ!
+├── docs/                             # Dokumentacja
 │   ├── DOKUMENTACJA_TECHNICZNA.md
 │   ├── INSTRUKCJA_OBSLUGI.md
-│   └── SCHEMATY.md
-├── platformio.ini                # Konfiguracja PlatformIO
-├── README.md                     # Wprowadzenie
-├── CHANGELOG.md                  # Historia zmian
-└── CLAUDE.md                     # Ten plik
+│   ├── INSTRUKCJA_OBSLUGI_v160_DODATEK.md
+│   ├── SCHEMATY.md
+│   ├── FUNKCJE.md
+│   └── REKOMENDACJE.md
+├── production_packages/              # Pakiety produkcyjne (ZIP)
+├── platformio.ini                    # Konfiguracja PlatformIO
+├── README.md                         # Wprowadzenie
+├── CHANGELOG.md                      # Historia zmian
+├── ANALIZA_KODU_SENIOR_DEVELOPER.md  # Analiza kodu
+└── CLAUDE.md                         # Ten plik
 ```
 
-### Kluczowe Pliki
+---
 
-#### `src/main.cpp`
+## KRYTYCZNE: Include Guard Cache Problem (v1.6.5 FIX)
+
+### Problem Zidentyfikowany
+
+C preprocessor cachował guard `CONFIG_H` z pierwszego pliku i **CAŁKOWICIE IGNOROWAŁ** drugi plik z tym samym guardem!
+
+```cpp
+// KONFLIKT (v1.6.0-v1.6.4):
+config.h:           #ifndef CONFIG_H  <- Preprocessor cachuje!
+config_v140_NEW.h:  #ifndef CONFIG_H  <- IGNOROWANE! Cała zawartość pomijana!
+```
+
+**Skutek**: GPIO definicje z config_v140_NEW.h NIGDY nie były używane -> GPIO 227 -> crash!
+
+### Rozwiązanie (v1.6.5)
+
+1. **Unikalny Include Guard**: `CONFIG_H` -> `CONFIG_V140_NEW_H`
+2. **Deprecation starych plikow**: `.h` -> `.h.bak` (uniemożliwia include)
+3. **Debug output GPIO** w main.cpp przy starcie
+
+### WYMAGANE przy każdej kompilacji
+
+```bash
+# ZAWSZE clean rebuild!
+rm -rf .pio
+pio run -t clean
+pio run
+```
+
+---
+
+## Kluczowe Pliki
+
+### `src/main.cpp`
 - **Funkcja**: Główny plik programu
 - **Zawiera**: `setup()`, `loop()`, logikę malowania
-- **Rozmiar**: ~700 linii
-- **Uwagi**: Nie modyfikuj struktury stanów bez pełnego zrozumienia
+- **Wersja**: SOFTWARE_VERSION = "1.6.5"
+- **Uwagi**: Nie modyfikuj struktury stanow bez pełnego zrozumienia
 
-#### `src/config.h`
+### `src/config_v140_NEW.h` (AKTYWNY CONFIG!)
 - **Funkcja**: Centralna konfiguracja
-- **Zawiera**: Mapowanie pinów GPIO, enumeracje, struktury
-- **WAŻNE**: Zmiana pinów tutaj wymaga weryfikacji sprzętowej!
+- **Zawiera**: Mapowanie pinow GPIO, enumeracje, struktury, FreeRTOS mutex
+- **Include Guard**: `CONFIG_V140_NEW_H` (UNIKALNY!)
+- **WAŻNE**: Zmiana pinow tutaj wymaga weryfikacji sprzętowej!
 
-#### `src/patterns.h`
-- **Funkcja**: Definicje wzorców malowania
+### `src/patterns.h`
+- **Funkcja**: Definicje wzorcow malowania
 - **Zawiera**: Tablicę `PATTERNS[]` z 15 wzorcami
 - **UWAGA**: Wzorce zgodne z normami - zmieniaj ostrożnie!
 
-#### `src/display_manager.*`
+### `src/display_manager.*`
 - **Klasa**: `DisplayManager`
 - **Odpowiedzialność**: Wszystkie operacje na wyświetlaczu TFT
-- **Optymalizacja**: Odświeża tylko zmienione obszary
+- **Optymalizacja**: TFT Sprites (double buffering) jeśli PSRAM dostępny
 - **Używa**: Biblioteki TFT_eSPI
 
-#### `src/encoder_handler.*`
+### `src/encoder_handler.*`
 - **Klasa**: `EncoderHandler`
 - **Odpowiedzialność**: Pomiar odległości i prędkości
 - **Przerwania**: Używa przerwania na GPIO 32 (CLK)
+- **Thread-safety**: FreeRTOS mutex (v1.4.2+)
 - **Precyzja**: ±1cm po kalibracji
 
-#### `src/relay_controller.*`
+### `src/dual_encoder_manager.*` [v1.6.0]
+- **Klasa**: `DualEncoderManager`
+- **Odpowiedzialność**: Zarządzanie dwoma enkoderami (redundancja)
+- **PRIMARY**: GPIO 32/33/13, **BACKUP**: GPIO 6/7/12
+- **Auto-failover**: Automatyczne przełączanie przy awarii
+
+### `src/relay_controller.*`
 - **Klasa**: `RelayController`
 - **Odpowiedzialność**: Sterowanie 6 przekaźnikami
 - **Bezpieczeństwo**: Natychmiastowe wyłączanie przy błędach
 
-#### `src/menu_system.*`
+### `src/menu_system.*`
 - **Klasa**: `MenuSystem`
 - **Odpowiedzialność**: UI menu, nawigacja joystickiem
-- **Pozycje**: Kalibracja, Pomiar, Reset, Info, Wyjście
+- **Pozycje**: Kalibracja, Pomiar, Serwis, Reset, Info, Wyjście
 
-#### `src/calibration.*`
+### `src/calibration.*`
 - **Klasa**: `CalibrationManager`
 - **Odpowiedzialność**: Kalibracja enkodera na 10m
 - **Pamięć**: Używa Preferences (EEPROM emulation)
 - **Zabezpieczenia**: Magic number + checksum
 
+### `src/service_mode.*` [v1.4.1]
+- **Klasa**: `ServiceMode`
+- **Odpowiedzialność**: Tryb serwisowy (czyszczenie pistoletow)
+- **Mechanizm**: Hold-to-fire (pistolety ON tylko gdy przycisk wciśnięty)
+- **Wizualizacja**: 6 kwadratow (zielony=fire, żołty=standby, szary=off)
+
+### `src/event_logger.*` [v1.5.0]
+- **Klasa**: `EventLogger`
+- **Odpowiedzialność**: Ring buffer (100 zdarzeń) z timestampami
+- **Typy zdarzeń**: SYSTEM_START, PATTERN_CHANGED, STATE_CHANGED, itp.
+
+### `src/sd_card_manager.*` [v1.6.0]
+- **Klasa**: `SDCardManager`
+- **Odpowiedzialność**: Zapis logow na kartę SD
+- **Format**: CSV z rotacją plikow
+- **Auto-save**: Co 10 min lub 50 zdarzeń
+
+### `src/wifi_server.*` [v1.4.0]
+- **Klasa**: `WiFiServerManager`
+- **Odpowiedzialność**: WiFi AP + Web Dashboard + REST API
+- **SSID**: "Trassar", **Hasło**: "12345678", **IP**: 192.168.4.1
+- **API Endpoints**: `/status`, `/control`, `/pattern`, `/api/startfromgap`
+
 ---
 
-## 🏗️ Architektura Systemu
+## Architektura Systemu
 
 ### Stany Systemu (enum SystemStateType)
 
@@ -112,119 +194,57 @@ STATE_PAUSED      // Wstrzymane (pauza)
 STATE_MENU        // Wyświetlone menu
 STATE_CALIBRATING // Kalibracja w toku
 STATE_MEASURING   // Pomiar dystansu
+STATE_ERROR       // Stan błędu [v1.4.0]
+STATE_SERVICE     // Tryb serwisowy [v1.4.1]
 ```
 
-### Przepływ Stanów
+### Mapowanie GPIO (v1.6.5)
 
-```
-START → STATE_IDLE
-        │
-        ├─[Przycisk wzorca + START]→ STATE_PAINTING
-        │                                   │
-        │                          [START/PAUZA]→ STATE_PAUSED
-        │                                   │         │
-        │                              [STOP]┘   [START/PAUZA]
-        │                                             │
-        │                                             ↓
-        ├─[Długie STOP]→ STATE_MENU                STATE_PAINTING
-        │                    │
-        │               [Kalibracja]→ STATE_CALIBRATING
-        │               [Pomiar]→ STATE_MEASURING
-        │               [Wyjście]→ STATE_IDLE
-        │
-        └─[STOP]→ STATE_IDLE
-```
+#### Wyświetlacz ILI9341 (SPI)
+| Pin | GPIO | Funkcja |
+|-----|------|---------|
+| MISO | 19 | SPI Master In |
+| MOSI | 23 | SPI Master Out |
+| SCLK | 18 | SPI Clock |
+| CS | 5 | Chip Select TFT |
+| DC | 22 | Data/Command |
+| RST | 21 | Reset |
 
-### Główna Pętla (main.cpp → loop())
+#### Enkodery
+| Enkoder | CLK | DT | SW |
+|---------|-----|----|----|
+| PRIMARY | 32 | 33 | 13 |
+| BACKUP | 6 | 7 | 12 |
 
-```cpp
-1. Aktualizacja enkodera (co 10ms)
-   - Zliczanie impulsów
-   - Obliczanie prędkości
+#### Przekaźniki (po fix v1.5.0 - bez strapping pins!)
+| Przekaźnik | GPIO | Pistolet |
+|------------|------|----------|
+| RELAY_1 | 10 | P1 (oś, 12cm) |
+| RELAY_2 | 11 | P2 (oś, 12cm) |
+| RELAY_3 | 8 | P3 (oś, 12cm) |
+| RELAY_4 | 9 | P4 (oś, 24cm) |
+| RELAY_5 | 16 | P5 (krawędź, 12cm) |
+| RELAY_6 | 17 | P6 (krawędź, 24cm) |
 
-2. Sprawdzanie przycisków
-   - Przyciski wzorców (P-1a do P-7d)
-   - REVERSE (odwracanie P-3a/P-3b)
-   - START/PAUZA
-   - STOP (krótkie/długie)
+#### Przyciski sterowania
+| Przycisk | GPIO | Uwagi |
+|----------|------|-------|
+| START | 0 | OK dla boot gdy INPUT_PULLUP |
+| STOP | 2 | - |
+| REVERSE | 14 | ZMIENIONE v1.6.4 (było 4) |
+| START_GAP | 46 | v1.3.0+ |
 
-3. Obsługa stanu
-   - MENU: MenuSystem::update()
-   - CALIBRATING: CalibrationManager::process()
-   - PAINTING: processPainting()
-   - MEASURING: tylko zliczanie
-
-4. Obliczenia
-   - calculatePaintedArea() - powierzchnia m²
-
-5. Aktualizacja UI (co 100ms)
-   - DisplayManager::showMainScreen()
-
-6. Delay(1) - odciążenie CPU
-```
+#### SD Card (współdzielony SPI)
+| Pin | GPIO |
+|-----|------|
+| CS | 4 |
+| MOSI | 23 (wspołny z TFT) |
+| MISO | 19 (wspołny z TFT) |
+| SCK | 18 (wspołny z TFT) |
 
 ---
 
-## 🎨 Wzorce Malowania
-
-### Struktura Pattern
-
-```cpp
-struct Pattern {
-    PatternType type;      // Enum (PATTERN_P1A ... PATTERN_P7D)
-    const char* name;      // "P-1a"
-    float lineLength;      // Długość linii (m), 0 = ciągła
-    float gapLength;       // Długość przerwy (m)
-    uint8_t width;         // Szerokość (12 lub 24 cm)
-    const char* description;
-    bool reversible;       // true dla P-3a, P-3b
-};
-```
-
-### Logika Malowania (processPainting)
-
-#### Linie Ciągłe (lineLength == 0)
-```cpp
-if (lineLength <= 0) {
-    if (width == 12) {
-        // Wąska: pistolety 2, 3, 4
-        relays.setRelay(2, true);
-        relays.setRelay(3, true);
-        relays.setRelay(4, true);
-    } else if (width == 24) {
-        // Szeroka: wszystkie (1-6)
-        relays.setRelay(1-6, true);
-    }
-}
-```
-
-#### Linie Przerywane
-```cpp
-float cycleLength = lineLength + gapLength;
-float positionInCycle = fmod(distance_meters, cycleLength);
-
-if (positionInCycle < lineLength) {
-    // MALUJ
-    włącz_pistolety(width);
-} else {
-    // PRZERWA
-    wyłącz_pistolety();
-}
-```
-
-#### Wzorce Odwracalne (P-3a, P-3b)
-
-Standardowo:
-- Lewa strona (pistolety 1-3): CIĄGŁA
-- Prawa strona (pistolety 4-6): PRZERYWANA
-
-Po naciśnięciu REVERSE:
-- Lewa strona (pistolety 1-3): PRZERYWANA
-- Prawa strona (pistolety 4-6): CIĄGŁA
-
----
-
-## 🔧 Konwencje Kodowania
+## Konwencje Kodowania
 
 ### Język
 
@@ -238,39 +258,34 @@ Po naciśnięciu REVERSE:
 ### Przykład
 
 ```cpp
-// ✅ DOBRZE
+// DOBRZE
 // Funkcja oblicza wymalowaną powierzchnię
 float calculatePaintedArea() {
     float szerokoscMetry = wzorzec.szerokosc / 100.0;
     // ...
 }
 
-// ❌ ŹLE (komentarze po angielsku)
+// ŹLE (komentarze po angielsku)
 // Function calculates painted area
 float calculatePaintedArea() {
     // ...
-}
-
-// ❌ ŹLE (polskie nazwy zmiennych)
-float obliczWymalowanaPowierzchnie() {
-    float szerokoscMetry = ...;
 }
 ```
 
 ### Struktura Kodu
 
-#### Plik Nagłówkowy (.h)
+#### Plik Nagłowkowy (.h)
 
 ```cpp
 /**
  * Opis klasy/modułu
  */
 
-#ifndef NAZWA_H
-#define NAZWA_H
+#ifndef NAZWA_KLASY_H      // UNIKALNY guard!
+#define NAZWA_KLASY_H
 
 #include <Arduino.h>
-#include "config.h"
+#include "config_v140_NEW.h"  // ZAWSZE config_v140_NEW.h, NIGDY config.h!
 
 class NazwaKlasy {
 private:
@@ -284,31 +299,32 @@ public:
     void metodaPubliczna();
 };
 
-#endif // NAZWA_H
+#endif // NAZWA_KLASY_H
 ```
 
-#### Plik Implementacji (.cpp)
+### Thread-Safety (v1.4.0+)
 
 ```cpp
-/**
- * Implementacja NazwaKlasy
- */
+// FreeRTOS mutex dla synchronizacji
+extern SemaphoreHandle_t stateMutex;
+extern SemaphoreHandle_t encoderMutex;
 
-#include "nazwa_klasy.h"
+// Użycie:
+LOCK_STATE();
+systemState.distance = newValue;
+UNLOCK_STATE();
 
-NazwaKlasy::NazwaKlasy() {
-    // Inicjalizacja
-}
-
-void NazwaKlasy::metodaPubliczna() {
-    // Implementacja
+// Lub bezpośrednio:
+if (xSemaphoreTake(encoderMutex, portMAX_DELAY) == pdTRUE) {
+    position++;
+    xSemaphoreGive(encoderMutex);
 }
 ```
 
 ### Debugowanie
 
 ```cpp
-// Makra debug (config.h)
+// Makra debug (config_v140_NEW.h)
 #define DEBUG_ENABLED 1
 
 #if DEBUG_ENABLED
@@ -328,18 +344,31 @@ DEBUG_PRINTF("Dystans: %ld cm\n", distance);
 
 ---
 
-## 🚨 WAŻNE: Co TRZEBA Wiedzieć
+## WAŻNE: Co TRZEBA Wiedzieć
 
-### 1. Piny GPIO - NIE ZMIENIAJ Bez Powodu
+### 1. Include Guards - ZAWSZE UNIKALNE!
 
-Piny są przemyślane pod kątem:
-- **ADC**: GPIO 34, 35 (tylko ADC1, ADC2 konfliktuje z WiFi)
-- **Przerwania**: GPIO 32 (encoder CLK)
-- **SPI**: GPIO 18, 19, 23 (hardware SPI)
+```cpp
+// DOBRZE - unikalny guard
+#ifndef DISPLAY_MANAGER_H
+#define DISPLAY_MANAGER_H
 
-⚠️ **Zmiana pinów = potrzebna weryfikacja sprzętowa!**
+// ŹLE - konflikt z innym plikiem!
+#ifndef CONFIG_H
+#define CONFIG_H
+```
 
-### 2. Enkoder - Używa Przerwań
+### 2. Plik Config - TYLKO config_v140_NEW.h
+
+```cpp
+// DOBRZE
+#include "config_v140_NEW.h"
+
+// ŹLE - stary plik, spowoduje crash!
+#include "config.h"
+```
+
+### 3. Enkoder - Używa Przerwań + Mutex
 
 ```cpp
 // main.cpp
@@ -348,62 +377,55 @@ attachInterrupt(digitalPinToInterrupt(ENCODER_CLK_PIN), encoderISR, CHANGE);
 void IRAM_ATTR encoderISR() {
     interruptFlag = true;
 }
+
+// encoder_handler.cpp - thread-safe
+if (encoderMutex != NULL && xSemaphoreTake(encoderMutex, portMAX_DELAY) == pdTRUE) {
+    position++;
+    xSemaphoreGive(encoderMutex);
+}
 ```
 
-⚠️ **Funkcje ISR muszą być IRAM_ATTR!**
+### 4. Strapping Pins - UNIKAĆ GPIO 12-15!
 
-### 3. Wyświetlacz - Optymalizacja Odświeżania
+GPIO 12-15 to strapping pins na ESP32-S3:
+- GPIO 12 musi być LOW przy boot (flash voltage)
+- Jeśli przekaźnik ON przy boot -> ESP może NIE WYSTARTOWAĆ!
 
-DisplayManager odświeża **tylko zmienione obszary**:
+**ROZWIĄZANIE v1.5.0**: Przekaźniki przeniesione na GPIO 8-11.
 
-```cpp
-// ✅ DOBRZE - tylko aktualizacja
-display.showMainScreen(pattern, speed, area, distance, state, reversed);
+### 5. PSRAM - Opcjonalne TFT Sprites
 
-// ❌ ŹLE - pełne odświeżanie co klatkę
-display.clear();
-display.showMainScreen(...);
+```ini
+# platformio.ini - jeśli ESP32-S3 MA PSRAM (N16R8):
+; board_build.psram_type = opi
+; board_build.arduino.memory_type = qio_opi
+
+# Jeśli NIE MA PSRAM - zostaw zakomentowane (auto-fallback)
 ```
 
-### 4. Preferences - Pamięć Nieulotna
-
-```cpp
-// Zapisywanie
-preferences.begin("calibration", false);
-preferences.putBytes("caldata", &data, sizeof(data));
-preferences.end();
-
-// Odczyt
-preferences.begin("calibration", false);
-preferences.getBytes("caldata", &data, sizeof(data));
-preferences.end();
-```
-
-⚠️ **Zawsze zamykaj `preferences.end()`!**
-
-### 5. Przekaźniki - Bezpieczeństwo
+### 6. Przekaźniki - Bezpieczeństwo
 
 ```cpp
 // ZAWSZE wyłączaj przy błędzie
 relays.stopAll();
 
-// NIE zapomnij o stopAll() w STOP
-if (state == STATE_IDLE) {
-    relays.stopAll();
+// Min prędkość do aktywacji pistoletow
+if (systemState.speed < MIN_SPEED_KMH) {
+    relays.stopAll();  // 2 km/h minimum!
 }
 ```
 
 ---
 
-## 🛠️ Typowe Zadania Modyfikacyjne
+## Typowe Zadania Modyfikacyjne
 
 ### Dodawanie Nowego Wzorca
 
-1. **Dodaj enum w config.h**:
+1. **Dodaj enum w config_v140_NEW.h**:
 ```cpp
 enum PatternType {
     ...
-    PATTERN_P8A,  // ← Nowy
+    PATTERN_P8A,  // <- Nowy
     PATTERN_COUNT
 };
 ```
@@ -417,32 +439,15 @@ enum PatternType {
     1.5,    // przerwa
     12,     // szerokość
     "Nowy wzorzec",
-    false   // odwracalny?
+    false,  // odwracalny?
+    true, true, true, false, false, false,  // gun1-6
+    12.0    // realWidth
 }
 ```
 
-3. **Dodaj przycisk**:
-- Zdefiniuj pin w config.h: `#define BTN_P8A_PIN XX`
-- Dodaj inicjalizację w `initPatternButtons()`
-- Dodaj sprawdzanie w `checkPatternButtons()`
+3. **Dodaj przycisk w config_v140_NEW.h i main.cpp**
 
-4. **Zaktualizuj dokumentację**:
-- README.md (tabela wzorców)
-- INSTRUKCJA_OBSLUGI.md (sekcja 7)
-- DOKUMENTACJA_TECHNICZNA.md (specyfikacja)
-
-### Zmiana Częstotliwości Odświeżania
-
-```cpp
-// config.h
-#define REFRESH_RATE 100  // ms (zmień tutaj)
-
-// main.cpp
-if (currentTime - lastUpdate >= REFRESH_RATE) {
-    updateDisplay();
-    lastUpdate = currentTime;
-}
-```
+4. **Zaktualizuj dokumentację**
 
 ### Dodawanie Nowej Pozycji Menu
 
@@ -455,486 +460,235 @@ enum MenuItem {
 };
 ```
 
-2. **Dodaj tekst w menu_system.cpp**:
-```cpp
-const char* MENU_ITEMS_TEXT[] = {
-    ...
-    "Nowa funkcja"
-};
-```
-
-3. **Obsłuż w handleSelection()**:
-```cpp
-case MENU_ITEM_NOWA_FUNKCJA:
-    // Implementacja
-    break;
-```
-
-### Modyfikacja UI
-
-**DisplayManager** jest odpowiedzialny za WSZYSTKIE operacje graficzne:
-
-```cpp
-// Nowa funkcja wyświetlania
-void DisplayManager::showCustomScreen() {
-    tft->fillScreen(COLOR_BACKGROUND);
-    tft->setTextSize(2);
-    tft->setTextColor(COLOR_TEXT, COLOR_BACKGROUND);
-    tft->setCursor(10, 10);
-    tft->println("Mój ekran");
-}
-```
+2. **Dodaj tekst w menu_system.cpp**
+3. **Obsłuż w handleSelection()**
 
 ---
 
-## 📝 Dokumentacja - Obowiązkowa Aktualizacja
-
-### Przy Każdej Zmianie Kodu
-
-Aktualizuj:
-1. **CHANGELOG.md** - dodaj wpis w sekcji [Unreleased]
-2. **README.md** - jeśli zmienia się funkcjonalność
-3. **Komentarze w kodzie** - ZAWSZE opisuj "dlaczego", nie "co"
-
-### Przy Wydaniu Nowej Wersji
-
-1. **Zmień wersję** w:
-   - `SOFTWARE_VERSION` (main.cpp)
-   - README.md
-   - CHANGELOG.md
-   - platformio.ini (tag)
-
-2. **CHANGELOG.md**:
-   - Przenieś [Unreleased] do nowej wersji [X.Y.Z]
-   - Dodaj datę: `## [1.1.0] - 2026-02-15`
-
-3. **Semantic Versioning**:
-   - **MAJOR** (X.0.0): Przełomowe zmiany (niekompatybilne)
-   - **MINOR** (x.X.0): Nowe funkcje (kompatybilne)
-   - **PATCH** (x.x.X): Poprawki błędów
-
----
-
-## 🧪 Testowanie
+## Testowanie
 
 ### Test Kompilacji
 
 ```bash
-# Z linii poleceń (PlatformIO)
+# ZAWSZE clean rebuild!
+rm -rf .pio
+pio run -t clean
 pio run
-
-# Jeśli błędy - sprawdź:
-- Biblioteki (pio lib install)
-- Piny GPIO (config.h)
-- Składnię C++
 ```
 
-### Test Przekaźników
+### Weryfikacja GPIO
 
-```cpp
-// main.cpp - setup()
-relays.testSequence();  // Sekwencja 1→6
-
-// Sprawdź:
-- Słyszalne kliknięcia
-- Kolejność 1-2-3-4-5-6
-- Brak zalipów
+Sprawdź w Serial Monitor przy starcie:
 ```
-
-### Test Enkodera
-
-```cpp
-// Menu → Pomiar dystansu
-// Przejedź znany odcinek (np. 100m)
-// Sprawdź wskazanie: ±1cm dopuszczalne
+--- DEBUG GPIO PINS ---
+ENCODER BACKUP: ... SW=12    <- MUSI BYĆ 12, NIE 19!
+BUTTONS: REVERSE=14 ...      <- MUSI BYĆ 14, NIE 4!
+--- END GPIO DEBUG ---
 ```
 
 ### Debug przez Serial
 
-```cpp
-// Monitor Serial (115200 baud)
+```bash
+# Monitor Serial (115200 baud)
 pio device monitor
-
-// Logi:
-[INFO] System uruchomiony
-[INFO] Kalibracja wczytana
-[DEBUG] Enkoder: impulsy 12345
-[DEBUG] Przekaźnik 1: ON
 ```
 
 ---
 
-## 🐛 Typowe Problemy i Rozwiązania
+## Typowe Problemy i Rozwiązania
 
-### Problem: "Guru Meditation Error" (Crash)
+### Problem: "Guru Meditation Error" / GPIO 227
 
-**Przyczyny**:
-1. Stack overflow (rekursja, duże zmienne lokalne)
-2. Heap exhausted (brak pamięci)
-3. Watchdog timeout (zbyt długa operacja w loop)
+**Przyczyna**: Include guard cache - preprocessor pomija config_v140_NEW.h
 
 **Rozwiązanie**:
-```cpp
-// ❌ ŹLE - duże bufory na stosie
-void funkcja() {
-    char buffer[10000];  // Stack overflow!
-}
+1. Usuń `.pio` folder
+2. `pio run -t clean`
+3. Sprawdź czy wszystkie .h includują `config_v140_NEW.h` (NIE `config.h`!)
 
-// ✅ DOBRZE - alokacja dynamiczna lub globalna
-char* buffer = (char*)malloc(10000);
-// lub
-static char buffer[10000];
-```
+### Problem: ESP32 nie bootuje
 
-### Problem: Wyświetlacz "mruga"
+**Przyczyna**: Przekaźniki na strapping pins (GPIO 12-15)
 
-**Przyczyna**: Zbyt częste `tft->fillScreen()`
+**Rozwiązanie**: Użyj v1.5.0+ (przekaźniki na GPIO 8-11)
 
-**Rozwiązanie**:
-```cpp
-// Użyj DisplayManager - on optymalizuje
-display.showMainScreen(...);  // Odświeża tylko zmiany
+### Problem: Prędkość zawsze 0 km/h
 
-// NIE używaj
-tft->fillScreen(BLACK);  // każdej klatki
-```
+**Przyczyna**: Bug obliczania distanceDiff (naprawiony v1.4.2)
 
-### Problem: Enkoder "gubi" impulsy
+**Sprawdź**: SOFTWARE_VERSION powinno być >= "1.4.2"
 
-**Przyczyny**:
-1. Brak przerwań
-2. Zbyt długie operacje w loop()
-3. Źle zamontowany enkoder
+### Problem: WiFi nie działa
 
-**Rozwiązanie**:
-```cpp
-// Sprawdź przerwania
-attachInterrupt(digitalPinToInterrupt(ENCODER_CLK_PIN), encoderISR, CHANGE);
-
-// Loop nie może trwać > 100ms
-// Podziel długie operacje
-```
-
-### Problem: Kalibracja się nie zapisuje
-
-**Przyczyna**: Błąd Preferences lub checksum
-
-**Rozwiązanie**:
-```cpp
-// Sprawdź logi Serial
-DEBUG_PRINTLN("Kalibracja zapisana");
-
-// Zweryfikuj checksum
-uint8_t checksum = calculateChecksum(&calData);
-
-// Namespace poprawny?
-preferences.begin("calibration", false);  // NIE "calib" ani inne!
-```
+**Sprawdź**:
+- SSID: "Trassar"
+- Hasło: "12345678"
+- IP: 192.168.4.1
 
 ---
 
-## 🔐 Bezpieczeństwo i Best Practices
+## Bezpieczeństwo i Best Practices
 
 ### 1. Zawsze Sprawdzaj Granice
 
 ```cpp
-// ✅ DOBRZE
+// DOBRZE
 if (relayNum >= 1 && relayNum <= 6) {
     digitalWrite(relayPins[relayNum - 1], state);
 }
-
-// ❌ ŹLE
-digitalWrite(relayPins[relayNum], state);  // Co jeśli relayNum = 10?
 ```
 
-### 2. Nullptr Checks
+### 2. Używaj fabs() dla float
 
 ```cpp
-// ✅ DOBRZE
-Pattern* pattern = getPattern(type);
-if (pattern) {
-    Serial.println(pattern->name);
-}
+// DOBRZE
+#include <cmath>
+if (fabs(speed - lastSpeed) > 0.1) { ... }
 
-// ❌ ŹLE
-Pattern* pattern = getPattern(type);
-Serial.println(pattern->name);  // Crash jeśli pattern == nullptr!
+// ŹLE - undefined behavior!
+if (abs(speed - lastSpeed) > 0.1) { ... }
 ```
 
-### 3. Używaj const Gdzie Możliwe
+### 3. snprintf zamiast sprintf
 
 ```cpp
-// ✅ DOBRZE
-const Pattern* getPattern(PatternType type) const;
-const char* getName() const;
-
-// Tablica tylko do odczytu
-const Pattern PATTERNS[] = { ... };
-```
-
-### 4. Unikaj String, Używaj char*
-
-```cpp
-// ✅ DOBRZE - stały rozmiar, szybkie
+// DOBRZE - bezpieczne
 char buffer[32];
-sprintf(buffer, "Prędkość: %.1f", speed);
+snprintf(buffer, sizeof(buffer), "%.1f", speed);
 
-// ❌ ŹLE - fragmentacja heap
-String message = "Prędkość: " + String(speed);
+// ŹLE - buffer overflow risk!
+sprintf(buffer, "%.1f", speed);
 ```
 
-### 5. Volatile dla Zmiennych w ISR
+### 4. Volatile dla ISR
 
 ```cpp
-// ✅ DOBRZE
+// DOBRZE
 volatile bool interruptFlag = false;
 volatile long position = 0;
 
 void IRAM_ATTR encoderISR() {
     interruptFlag = true;
-    position++;
 }
-
-// ❌ ŹLE - kompilator może zoptymalizować
-bool interruptFlag = false;
 ```
 
 ---
 
-## 📚 Biblioteki i Zależności
+## Biblioteki i Zależności
 
-### TFT_eSPI (Wyświetlacz)
+### platformio.ini
 
-```cpp
-#include <TFT_eSPI.h>
-
-// Inicjalizacja
-TFT_eSPI tft = TFT_eSPI();
-tft.init();
-tft.setRotation(1);  // Landscape
-
-// Rysowanie
-tft.fillScreen(TFT_BLACK);
-tft.drawRect(x, y, w, h, color);
-tft.setCursor(x, y);
-tft.println("Tekst");
+```ini
+lib_deps =
+    bodmer/TFT_eSPI@^2.5.43
+    bblanchon/ArduinoJson@^6.21.4
+    adafruit/Adafruit GFX Library@^1.11.9
 ```
 
-**Konfiguracja**: Ustawienia w `platformio.ini` (build_flags)
+### TFT_eSPI
 
-### Preferences (EEPROM Emulation)
+Konfiguracja w `platformio.ini` (build_flags):
+- `-DUSER_SETUP_LOADED=1`
+- `-DILI9341_DRIVER=1`
+- `-DTFT_WIDTH=240`, `-DTFT_HEIGHT=320`
+- SPI pins: MISO=19, MOSI=23, SCLK=18, CS=5, DC=22, RST=21
 
-```cpp
-#include <Preferences.h>
-
-Preferences prefs;
-prefs.begin("namespace", false);  // false = read/write
-
-// Zapis
-prefs.putInt("key", value);
-prefs.putBytes("data", &struct, sizeof(struct));
-
-// Odczyt
-int val = prefs.getInt("key", defaultValue);
-prefs.getBytes("data", &struct, sizeof(struct));
-
-prefs.end();  // ZAWSZE zamknij!
-```
-
-### ArduinoJson (Opcjonalne)
-
-Zainstalowane, ale obecnie nieużywane. Przydatne do:
-- Eksportu danych do JSON
-- Konfiguracji przez plik JSON
-- API REST (przyszłość)
-
----
-
-## 🎓 Dla Początkujących z ESP32
-
-### Setup vs Loop
+### FreeRTOS (wbudowany w ESP32)
 
 ```cpp
-void setup() {
-    // Wywoływane JEDEN RAZ przy starcie
-    Serial.begin(115200);
-    pinMode(LED_PIN, OUTPUT);
-}
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 
-void loop() {
-    // Wywoływane W NIESKOŃCZONOŚĆ
-    digitalWrite(LED_PIN, HIGH);
-    delay(1000);
-    digitalWrite(LED_PIN, LOW);
-    delay(1000);
-}
-```
-
-### Przerwania (Interrupts)
-
-```cpp
-// Funkcja przerwania - MUSI być IRAM_ATTR
-void IRAM_ATTR handleInterrupt() {
-    // KOD MUSI BYĆ KRÓTKI!
-    // NIE używaj Serial, delay, malloc
-    flag = true;
-}
-
-void setup() {
-    attachInterrupt(digitalPinToInterrupt(PIN), handleInterrupt, RISING);
-}
-```
-
-### GPIO Modes
-
-```cpp
-pinMode(PIN, INPUT);        // Wejście (floating)
-pinMode(PIN, INPUT_PULLUP); // Wejście + pull-up (używamy tego!)
-pinMode(PIN, OUTPUT);       // Wyjście
-```
-
-### ADC (Analog to Digital)
-
-```cpp
-int value = analogRead(PIN);  // 0-4095 (12-bit)
-
-// Dla joysticka:
-int x = analogRead(JOY_X_PIN);  // 0=lewo, 2048=środek, 4095=prawo
-int y = analogRead(JOY_Y_PIN);  // 0=góra, 2048=środek, 4095=dół
+SemaphoreHandle_t mutex = xSemaphoreCreateMutex();
+xSemaphoreTake(mutex, portMAX_DELAY);
+// critical section
+xSemaphoreGive(mutex);
 ```
 
 ---
 
-## 🚀 Zaawansowane Techniki
+## Checklist Przed Commitem
 
-### Optymalizacja Pamięci
-
-```cpp
-// PROGMEM - dane w Flash zamiast RAM
-const char text[] PROGMEM = "Długi tekst...";
-
-// F() macro - stringi w Flash
-Serial.println(F("To oszczędza RAM"));
-
-// static - alokacja raz
-void funkcja() {
-    static char buffer[100];  // Nie każdym razem
-}
-```
-
-### RTOS Tasks (Przyszłość)
-
-```cpp
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-
-void taskFunction(void* parameter) {
-    while(1) {
-        // Kod zadania
-        vTaskDelay(100 / portTICK_PERIOD_MS);
-    }
-}
-
-void setup() {
-    xTaskCreate(taskFunction, "Task", 4096, NULL, 1, NULL);
-}
-```
-
-### WiFi (Przyszłość - v1.1.0)
-
-```cpp
-#include <WiFi.h>
-
-WiFi.begin("SSID", "password");
-while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-}
-
-// Serwer web, OTA updates, monitoring...
-```
-
----
-
-## ✅ Checklist Przed Commitem
-
-- [ ] Kod kompiluje się bez ostrzeżeń
+- [ ] Kod kompiluje się bez ostrzeżeń (`rm -rf .pio && pio run`)
+- [ ] Wszystkie .h includują `config_v140_NEW.h` (NIE `config.h`!)
+- [ ] Include guards są UNIKALNE
 - [ ] Dodane komentarze (po polsku) wyjaśniające "dlaczego"
 - [ ] Zaktualizowane `CHANGELOG.md`
-- [ ] Jeśli zmiana pinów → zaktualizuj `config.h` i `SCHEMATY.md`
-- [ ] Jeśli nowe funkcje → zaktualizuj `README.md`
-- [ ] Jeśli zmiany UI → zaktualizuj `INSTRUKCJA_OBSLUGI.md`
+- [ ] Jeśli zmiana pinow -> zaktualizuj `config_v140_NEW.h` i `docs/SCHEMATY.md`
 - [ ] Debug logi używają `DEBUG_PRINTF` (nie `Serial.print`)
-- [ ] Usunięte nieużywane zmienne i funkcje
-- [ ] Sprawdzone granice tablic (`if (index < SIZE)`)
-- [ ] Brak memory leaks (free() dla malloc())
-- [ ] Przerwania ISR mają `IRAM_ATTR`
+- [ ] Funkcje ISR mają `IRAM_ATTR`
+- [ ] Float comparisons używają `fabs()` (nie `abs()`)
+- [ ] Użyto `snprintf()` zamiast `sprintf()`
 
 ---
 
-## 📞 Kontakt i Wsparcie
+## Historia Wersji (Skrocona)
+
+| Wersja | Data | Główne zmiany |
+|--------|------|---------------|
+| 1.6.5 | 2026-01-27 | Include guard cache fix (CONFIG_V140_NEW_H) |
+| 1.6.4 | 2026-01-27 | GPIO conflicts fix (REVERSE=14, BACKUP_SW=12) |
+| 1.6.0 | 2026-01-26 | Dual Encoder, SD Card, TFT Sprites |
+| 1.5.0 | 2026-01-26 | Strapping pins fix, Event Logger |
+| 1.4.2 | 2026-01-26 | 5 critical bugfixes (speed, mutex, fabs) |
+| 1.4.1 | 2026-01-26 | Service Mode |
+| 1.4.0 | 2026-01-23 | WiFi, thread-safety, GPIO redesign |
+| 1.3.0 | 2026-01-23 | Start Gap function |
+| 1.0.0 | 2026-01-23 | Initial production release |
+
+Pełna historia: patrz `CHANGELOG.md`
+
+---
+
+## Kontakt i Wsparcie
 
 ### Dla AI Assistants
 
 Jeśli jako AI asystent napotykasz problemy:
 1. Przeczytaj **całą** dokumentację techniczną
-2. Sprawdź `config.h` dla pinów i stałych
+2. Sprawdź `config_v140_NEW.h` dla pinow i stałych (NIE config.h!)
 3. Zobacz `main.cpp` dla logiki głównej
 4. Konsultuj `INSTRUKCJA_OBSLUGI.md` dla flow użytkownika
-
-### Dla Ludzi
-
-- **GitHub**: https://github.com/miastekpl/MT220126
-- **Email**: support@mt220126.pl
-- **Issues**: Używaj GitHub Issues
+5. Sprawdź `CHANGELOG.md` dla historii bugfixow
 
 ### Pytania Częste (dla AI)
+
+**Q: Ktory plik config używać?**
+A: TYLKO `config_v140_NEW.h`. Pliki `config.h` i `config_v130_OLD.h` są deprecated (.bak).
 
 **Q: Jak dodać nową funkcjonalność?**
 A: Najpierw zrozum architekturę (stany, klasy). Dodaj kod w odpowiedniej klasie. Zaktualizuj dokumentację.
 
 **Q: Kod mi się nie kompiluje**
-A: Sprawdź `platformio.ini` (biblioteki). Sprawdź składnię C++. Zobacz logi kompilatora.
+A: `rm -rf .pio && pio run -t clean && pio run`. Sprawdź include guards!
 
-**Q: System crashuje**
-A: Zobacz "Typowe Problemy". Użyj `DEBUG_PRINTF`. Sprawdź Stack Overflow.
-
-**Q: Jak przetestować bez sprzętu?**
-A: Symulacja jest trudna. Możesz testować logikę (bez HAL). Lub użyj Wokwi (symulator ESP32).
+**Q: System crashuje (GPIO 227)**
+A: Include guard conflict. Upewnij się że WSZYSTKIE .h includują `config_v140_NEW.h`.
 
 ---
 
-## 🎖️ Podziękowania
-
-System stworzony przez **MT220126 Engineering Team** z 200+ letnim zbiorczym doświadczeniem.
-
-Specjalne podziękowania dla:
-- **PlatformIO** - świetne środowisko deweloperskie
-- **TFT_eSPI** - szybka biblioteka do TFT
-- **Espressif** - za ESP32-S3
-- **Społeczność Arduino** - za wsparcie
-
----
-
-**Wersja CLAUDE.md**: 1.0.0
-**Data**: 2026-01-23
-**Ostatnia aktualizacja**: 2026-01-23
-
----
-
-## 🌟 Słowo Końcowe dla AI Asystenta
+## Słowo Końcowe dla AI Asystenta
 
 Szanowny Asystencie AI (Claude lub inny),
 
 Ten projekt to system embedded czasu rzeczywistego. **Bezpieczeństwo** i **niezawodność** są najważniejsze. Przed jakąkolwiek modyfikacją:
 
 1. **Zrozum kontekst** - przeczytaj dokumentację
-2. **Testuj dokładnie** - nie ma miejsca na błędy
-3. **Dokumentuj zmiany** - inni muszą zrozumieć
-4. **Pytaj jeśli niepewność** - lepiej zapytać niż zepsuć
+2. **Include guards** - ZAWSZE unikalne, NIGDY duplikaty!
+3. **config_v140_NEW.h** - JEDYNY aktywny config
+4. **Clean rebuild** - `rm -rf .pio` przed każdą kompilacją
+5. **Testuj dokładnie** - nie ma miejsca na błędy
+6. **Dokumentuj zmiany** - inni muszą zrozumieć
 
 Ten system będzie używany w rzeczywistych warunkach drogowych. Życie ludzi może zależeć od jego poprawności.
 
-**Koduj odpowiedzialnie! 🚗💚**
+**Koduj odpowiedzialnie!**
+
+---
+
+**Wersja CLAUDE.md**: 1.6.5
+**Data**: 2026-01-28
+**Ostatnia aktualizacja**: 2026-01-28
 
 ---
 
